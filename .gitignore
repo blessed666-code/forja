@@ -28,3 +28,12 @@ next-env.d.ts
 
 # legacy prototype
 v0/
+
+# ARKA Harness & Agency Internal IP (Keep local, do not expose on public GitHub)
+.cursor/
+.cursorrules
+.impeccable/
+graphify-out/
+docs/
+PRODUCT.md
+DESIGN.md
