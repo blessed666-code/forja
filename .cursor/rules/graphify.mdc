@@ -1,0 +1,41 @@
+---
+description: Graphify — grafo de dependencias del proyecto. Siempre activo: orientar con el grafo antes de explorar el código.
+alwaysApply: true
+---
+
+# Graphify — mapa del código de este cliente
+
+Este proyecto tiene un grafo en `graphify-out/` (un grafo **por cliente**, nunca el del monorepo `arka-clients/`).
+
+## Obligatorio antes de explorar
+
+Antes de usar Read, Grep, Glob o Bash para **explorar** el código, corre graphify desde la raíz de este proyecto:
+
+```bash
+graphify query "<pregunta o símbolo>"
+graphify path "<A>" "<B>"
+graphify explain "<concepto>"
+```
+
+Aplica a ti y a todo subagente. Incluye esta rule en el prompt de subagentes que exploren código.
+
+No saltes graphify porque “ya conoces los archivos” o porque estás ejecutando un plan: el grafo muestra dependencias cruzadas y aristas INFERRED que grep no ve.
+
+## Cuándo sí puedes ir directo a Read/Grep
+
+1. Graphify ya te orientó y solo necesitas editar o depurar líneas concretas.
+2. Aún no existe `graphify-out/graph.json` (entonces créalo con `graphify update .` y sigue).
+3. La tarea no es exploración de código (p. ej. escribir docs comerciales, solo CSS de un archivo ya ubicado).
+
+## Mantenimiento
+
+- Tras modificar código de forma relevante: `graphify update .` (solo AST, **0 tokens de IA**).
+- Si existe `graphify-out/wiki/index.md`, navega ahí antes de leer archivos crudos.
+- `GRAPH_REPORT.md` solo para revisión amplia de arquitectura.
+
+## Ver el grafo (humano)
+
+```bash
+~/arka-agent-ops/scripts/open-graph.sh .
+# 2D: graph.html · 3D: graph-3d.html
+```

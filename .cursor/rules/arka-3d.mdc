@@ -1,0 +1,78 @@
+---
+description: Reglas para escenas 3D con React Three Fiber en proyectos ARKA de nivel 4. Se carga al tocar archivos de escena.
+globs: ["**/components/3d/**","**/components/three/**","**/components/scenes/**","**/*.glsl","**/*.vert","**/*.frag"]
+alwaysApply: false
+---
+
+# ARKA — 3D con React Three Fiber
+
+Se activa al tocar archivos de escena. Si el proyecto no es nivel 4 y no tiene carpeta de escenas, no aplica nada de aquí.
+
+## 1. Cuándo el 3D es válido
+
+Entra cuando el diagnóstico marca **nivel 4** o una escena del storyboard lo exige: producto que se explora, configuradores, hero que reacciona al cursor, o un canvas que recorre la página.
+
+El agente nunca lo agrega por su cuenta. En los niveles 1 a 3 no se propone, aunque el efecto "quedaría bien".
+
+## 2. Aislamiento del canvas — regla dura
+
+- **Framer Motion nunca anima el `<Canvas>`, un `mesh`, un `group` ni una cámara.** Dentro de la escena se anima con `useFrame`, `react-spring/three` o `drei`.
+- Framer Motion se limita a los overlays HTML sobre la escena, en `position: absolute` / `fixed`, en un componente hermano del canvas.
+- Nada de `motion.div` envolviendo el `<Canvas>` con `scale` o `layout`: rompe el sizing del renderer.
+
+## 3. Carga y SSR
+
+- El canvas se importa siempre en dinámico y sin SSR:
+
+```tsx
+const Scene = dynamic(() => import('@/components/3d/scene'), {
+  ssr: false,
+  loading: () => <ScenePoster />,
+})
+```
+
+- `<ScenePoster />` es una imagen estática real del mismo encuadre, con `next/image`. Nunca un spinner sin contenido.
+- El `<Canvas>` declara `dpr={[1, 2]}` y `gl={{ antialias: true, powerPreference: 'high-performance' }}`.
+- Suspense obligatorio alrededor de modelos y texturas.
+
+## 4. Presupuesto de performance
+
+- Modelos en `.glb` comprimidos con Draco o Meshopt. Nada de `.gltf` con texturas sueltas sin comprimir.
+- Techos: el código 3D (three + fiber + lo usado de drei) pesa como máximo **250 KB gzip** y se carga después del LCP. Cada modelo pesa como máximo **600 KB**, con Meshopt y texturas WebP o KTX2. El DPR máximo es 1,5.
+- Texturas en `.webp` o `.ktx2`, potencias de dos, nunca 4K en web.
+- `useGLTF.preload()` solo del modelo del primer viewport.
+- Instancing (`<Instances>`) cuando hay más de 20 mallas repetidas.
+- Sin `shadows` de resolución alta en móvil; si hace falta sombra, `<ContactShadows>` de drei.
+
+## 5. Canvas persistente y scroll
+
+Cuando hay más de una escena 3D en la misma página, hay un solo `<Canvas>` fijo. Lo que debe seguir a una sección se ancla con `<View>` de drei: un contexto WebGL, no uno por bloque.
+
+- `frameloop="demand"`. Se llama `invalidate()` en el scroll y en el movimiento del cursor, y no se renderiza en reposo.
+- Se pausa fuera de pantalla y cuando la pestaña queda oculta.
+- `lenis.velocity` y el progreso de ScrollTrigger entran como uniforms. Con movimiento reducido no hay efecto de velocidad.
+
+## 6. Accesibilidad y puerta de movimiento
+
+- `full`: escena completa. En celular, la misma escena con menos partículas y menos resolución.
+- `lite` y `static`: el póster, no el canvas. `static` también cuando `prefers-reduced-motion` está activo. Nada de rotación automática infinita.
+- La escena nunca contiene información esencial que no exista también en HTML accesible (texto, alt, tabla).
+- El canvas no captura el scroll de la página salvo que sea una interacción explícita y reversible.
+- Nada de audio automático.
+
+## 7. Stack fijo
+
+`three` · `@react-three/fiber` · `@react-three/drei` · `@react-three/postprocessing` solo si el efecto lo justifica. Nada de librerías 3D adicionales sin acordarlo.
+
+TypeScript estricto también aquí: tipar refs (`useRef<THREE.Mesh>(null)`), nunca `any` en el resultado de `useGLTF`.
+
+## 8. Estructura
+
+```
+components/3d/
+├── scene.tsx          ← <Canvas> y luces
+├── models/            ← un archivo por modelo
+├── materials/         ← shaders y materiales
+└── overlays/          ← HTML sobre la escena (aquí sí Framer Motion)
+public/models/         ← .glb comprimidos
+```

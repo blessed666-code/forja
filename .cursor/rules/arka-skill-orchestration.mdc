@@ -1,0 +1,72 @@
+---
+description: Orquestación de skills de frontend ARKA — define el orden de las fases y evita que dos skills de diseño se activen a la vez
+alwaysApply: true
+---
+
+# ARKA — Orquestación de skills de frontend
+
+**Alcance:** solo trabajo de interfaz (componentes, páginas, estilos, animación, 3D).
+Si la tarea no es frontend — diagnóstico de cliente, documentos, backend, agentes de WhatsApp, git, infraestructura — **ignora este archivo por completo**.
+
+## Por qué existe
+
+`impeccable` y `ui-ux-pro-max` traen descripciones muy amplias que se disparan con casi cualquier petición de UI. Si ambas entran a la vez compiten por atención y el resultado se contradice. Aquí se define quién manda en cada momento.
+
+El bloqueo real lo hace el runtime: las skills de fase se instalan con `disable-model-invocation: true`, así que solo entran cuando el usuario escribe `/nombre`. Esta rule documenta el orden y los límites, y cubre el caso de una skill que llegue sin ese flag.
+
+## Regla base
+
+**Ninguna skill de diseño se auto-invoca.** Se usan cuando el usuario las nombra, en el orden de fases de abajo. Si el usuario pide algo de UI sin nombrar ninguna, trabaja con las rules de frontend y pregúntale si quiere entrar al flujo de fases. No decidas tú cargar dos skills de diseño en la misma respuesta.
+
+## Fases
+
+| Fase | Invocación | Entrega | Puede escribir código |
+|---|---|---|---|
+| 0 | v0, fuera de Cursor | Versión estática diseñada, desde `docs/prompt-v0-[slug].md`. Se omite cuando el diseño ya está aprobado | Sí, fuera del repo |
+| 1 | `/ui-ux-pro-max` | Mapa de componentes y storyboard: qué técnica lleva cada sección, según el nivel | No |
+| 2 | `/arka-build-ui` | Integra lo de v0, monta el kit base (puerta de movimiento, Lenis, pausa) y construye la UI. Al cerrar, el nivel 1 está completo | Sí |
+| 3 | `/arka-scenes` | Escenas de scroll del storyboard, en los niveles 2 a 4 | Sí |
+| 4 | `/react-three-fiber` | Escenas 3D. Solo nivel 4 | Sí, acotado al 3D |
+| 5 | `/impeccable` | Auditoría y pulido final | Sí, acotado (ver abajo) |
+| — | `/arka-media` | Medios listos para la web: video por scroll, secuencias y pósters. Entra cuando una escena los necesita, sin ocupar el turno de otra fase | Solo archivos en `public/` |
+
+Reglas de secuencia:
+
+- La fase 2 no arranca sin el storyboard de la fase 1 ni el código de v0. Si el proyecto no tuvo fase 0, arranca con el diseño ya aprobado en el repo. Si falta el storyboard o los tokens, pídelos: no improvises una paleta.
+- Nunca ejecutes dos fases en una sola respuesta. Cada fase termina, el usuario revisa, y él decide avanzar.
+- La fase 5 va al final. Auditar antes de que la UI exista genera hallazgos falsos.
+
+## Fase 4 — 3D nunca por iniciativa propia
+
+`react-three-fiber` y la rule `arka-3d` se activan **solo** en nivel 4, o cuando una escena del storyboard lo exige. No propongas Three.js, R3F ni WebGL como mejora espontánea: mueve el presupuesto de performance de todo el sitio.
+
+## Fase 5 — límites duros de la auditoría
+
+Cuando corre `impeccable`, **puede** tocar:
+
+- Imports rotos, no usados o rutas inconsistentes
+- Atributos ARIA, `alt`, semántica HTML, orden de foco
+- `prefers-reduced-motion` faltante, o una escena sin versión `static` o sin botón de pausa
+- Limpieza de GSAP faltante por completo (ni `.kill()` ni `gsap.context()`) — nunca migrar un patrón ya funcional
+- Frontera RSC/RCC mal puesta (`'use client'` faltante o de más)
+- Contraste que no cumple WCAG 2.2 AA
+
+**No puede**, sin pedir permiso explícito:
+
+- Reescribir la lógica de negocio o el estado de un componente
+- Cambiar la paleta, tipografías o escala tipográfica ya aprobadas en la fase 1
+- Reemplazar los patrones de animación definidos en `arka-frontend-motion` y en `arka-scrollytelling`
+- Quitar Lenis, cambiar el `lerp` del perfil o los niveles de la puerta de movimiento
+- Migrar GSAP entre patrón manual y `gsap.context()`
+- Reestructurar carpetas o renombrar componentes
+- Tocar copy real del negocio
+
+Si detecta algo fuera de esa lista, lo **reporta como hallazgo** y espera decisión. No lo arregla en silencio.
+
+## Skills que sí pueden entrar solas
+
+`vercel-react-best-practices` y `next-best-practices` son transversales de performance y convenciones: pueden aplicarse en cualquier fase sin pedir turno, porque no compiten por el criterio visual.
+
+## Relación con el pipeline ARKA
+
+v0 sigue siendo el paso anterior: genera la versión estática diseñada, que es la que ve quien pide movimiento reducido. Este harness le agrega Lenis, las escenas y el 3D; no reemplaza esa base. Se omite cuando el diseño ya está aprobado en el repo. El diagnóstico manda sobre paleta, copy, secciones, perfil y nivel; ninguna skill los reinventa.

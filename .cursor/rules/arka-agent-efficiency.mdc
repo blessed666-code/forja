@@ -1,0 +1,45 @@
+---
+description: Orquestación de herramientas de eficiencia ARKA — cuándo usar caveman, context-mode, graphify y planes. No aplica al diseño visual.
+alwaysApply: true
+---
+
+# ARKA — Orquestación de eficiencia del agente
+
+Complementa (no reemplaza) el harness frontend. Aquí se decide **cómo trabajar**, no cómo se ve la UI.
+
+## Mapa rápido
+
+| Herramienta | Se activa | Usar en |
+|---|---|---|
+| Graphify (rule por cliente) | Sola, siempre en el proyecto del cliente | Explorar/arreglar código de ese cliente |
+| Context-mode (MCP + rule global) | Sola, global | Backend, logs, datasets, HTML web, salidas >20 líneas |
+| `/caveman*` | Solo si la invocas | Backend, commits, reviews — **nunca** diagnóstico ni fases frontend |
+| `/writing-plans` · planes | Si la invocas / si el modelo la elige | Tareas multi-paso antes de tocar código |
+| Canvas | Si el modelo la elige o pides canvas | Tablas, stats, artefactos analíticos |
+
+## Prohibido en estos flujos
+
+### Diagnóstico (`/arka-diagnostico`)
+
+- **No** `/caveman` ni variantes: la propuesta y el diagnóstico van en español claro y comercial.
+- **No** comprimir el tono. Context-mode solo si analizas un PDF/HTML enorme; el flujo normal es conversación + escribir markdown.
+
+### Frontend (fases `/ui-ux-pro-max` → `/arka-build-ui` → `/impeccable`)
+
+- **No** `/caveman`: el copy y las decisiones de UI necesitan claridad.
+- Graphify **sí** aplica si estás en la carpeta del cliente y exploras código (bug en una sección, dependencias).
+- Context-mode: solo si hay que parsear logs o archivos enormes; para editar un componente ya ubicado, Read + Edit bastan.
+
+### Backend / automatizaciones / agentes WhatsApp / scripts
+
+- Aquí sí: `/caveman` para respuestas densas, context-mode para datos crudos, graphify si el repo del cliente lo tiene.
+
+## Graphify
+
+Vive **por cliente** (`~/arka-clients/<slug>/graphify-out/`). Nunca uses el grafo de la raíz de `arka-clients/` si existe: mezcla proyectos.
+
+Si el usuario dice “hay un error en el Hero” sin listar archivos: `graphify query` primero, luego lee solo lo que el grafo señale.
+
+## Relación con arka-harness
+
+Las skills de diseño (`/ui-ux-pro-max`, `/arka-build-ui`, `/impeccable`, `/react-three-fiber`) las gobierna `arka-skill-orchestration`. Esta rule no las pisa.
