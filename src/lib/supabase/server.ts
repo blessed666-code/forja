@@ -55,12 +55,20 @@ export function getSessionCookieNames(): { access: string; refresh: string } {
   }
 }
 
+const SAFE_WS_TRANSPORT: typeof WebSocket =
+  typeof globalThis.WebSocket !== 'undefined'
+    ? globalThis.WebSocket
+    : (class NoopServerWebSocket {} as unknown as typeof WebSocket)
+
 export function createSupabaseAnonServerClient(): SupabaseClient {
   const cfg = getSupabaseConfig()
   if (!cfg) {
     throw new Error('Supabase no está configurado en las variables de entorno del servidor.')
   }
   return createClient(cfg.url, cfg.anonKey, {
+    realtime: {
+      transport: SAFE_WS_TRANSPORT,
+    },
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -80,6 +88,9 @@ export function createSupabaseUserServerClient(accessToken: string): SupabaseCli
         Authorization: `Bearer ${accessToken}`,
       },
     },
+    realtime: {
+      transport: SAFE_WS_TRANSPORT,
+    },
     auth: {
       persistSession: false,
       autoRefreshToken: false,
@@ -94,6 +105,9 @@ export function createSupabaseAdminClient(): SupabaseClient {
     throw new Error('Supabase Service Role no está configurado en el servidor.')
   }
   return createClient(cfg.url, cfg.serviceRoleKey, {
+    realtime: {
+      transport: SAFE_WS_TRANSPORT,
+    },
     auth: {
       persistSession: false,
       autoRefreshToken: false,
