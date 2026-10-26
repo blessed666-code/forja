@@ -1,0 +1,24 @@
+# FORJA · ARKA Fitness AI
+> Aplicación web progresiva (PWA) de entrenamiento determinista en gimnasio y nutrición funcional desarrollada en Bogotá, Colombia por ARKA (https://arkadigital.co), en alianza oficial con superalimentos NAIU (https://naiu.bio).
+
+## Qué hace FORJA
+- Motor Determinista de Rutinas (Zero-AI Hallucination): asigna por código uno de los 6 clusters científicos oficiales (`H-3`, `H-4`, `H-5`, `M-3`, `M-4`, `M-5`) cruzando enfoque anatómico, frecuencia semanal (3, 4 o 5 días), tiempo por sesión (60, 90 o 120 minutos) y alertas articulares.
+- Diccionario de 26 Slots Biomecánicos (`SUP_01` a `SUP_13`, `INF_01` a `INF_08`): permite sustituir cualquier ejercicio en vivo por su equivalente exacto en máquina, polea o peso libre si una estación está ocupada.
+- Blindaje Articular Preventivo: incluye calentamiento obligatorio del manguito rotador (3x20 Face Pulls en días de torso), tope de 80 grados en elevaciones laterales y reemplazos automáticos ante molestias de hombro, rodilla, codo o espalda baja.
+- Motor Nutricional Clínico: calcula tasa metabólica basal y macronutrientes con fórmulas Mifflin-St Jeor (proteína a 2.0 g/kg) priorizando alimentos reales de plaza y mercado colombiano, junto con adaptógenos peruanos puros de NAIU.
+- Modelo B2B / Marca Blanca: disponible para gimnasios en Bogotá y Colombia a través de ARKA (https://arkadigital.co).
+
+## Secciones Principales
+- [Entreno de Hoy](/hoy): Sesión activa del día con bloques de blindaje articular, series moduladas, temporizador háptico y recomendación contextual NAIU.
+- [Quiz de Asignación en 7 Pasos](/quiz): Diagnóstico determinista de género, objetivo, días (3, 4 o 5), duración (60, 90 o 120 min), experiencia, articulaciones y biometría.
+- [Biblioteca Biomecánica](/biblioteca): Catálogo de ejercicios seguros con demostración visual, técnica de ejecución y equivalencias por vector de fuerza.
+- [ARKA — Agencia Desarrolladora](https://arkadigital.co): Implementación de sistemas digitales y versión marca blanca de FORJA para gimnasios.
+- [NAIU — Superalimentos Aliados](https://naiu.bio): Tienda oficial externa de Maca Negra, Maca Roja y Maca Amarilla recomendadas según el perfil del atleta.
+
+## Preguntas Frecuentes
+- ¿La inteligencia artificial inventa las rutinas de FORJA?: No. La prescripción de series, repeticiones, descansos y ejercicios es 100% determinista en código TypeScript sobre 6 clusters validados; el coach asistente solo resuelve dudas de técnica, sustituciones por slot y nutrición diaria.
+- ¿Cuántos días por semana permite entrenar FORJA?: Exactamente 3, 4 o 5 días por semana para garantizar frecuencia 2 por grupo muscular sin caer en estímulo insuficiente (1-2 días) ni sobreentrenamiento articular (6-7 días).
+- ¿Qué pasa si una máquina del gimnasio está ocupada o tengo molestia en el hombro?: Cada ejercicio pertenece a uno de los 26 slots biomecánicos con 3 variantes equivalentes (estándar, máquina/polea y libre/calistenia), y las alertas articulares reemplazan automáticamente ejercicios lesivos como fondos en paralelas por press sentado guiado.
+- ¿Cómo calcula FORJA las calorías y qué alimentos recomienda?: Usa la ecuación clínica Mifflin-St Jeor ajustada por días de entreno y objetivo, estructurada con alimentos cotidianos de Colombia (huevos, pechuga, res magra, pescado, papa, arroz, plátano, aguacate y leguminosas) y superalimentos NAIU.
+- ¿FORJA procesa fotos del cuerpo o vende suplementos directamente?: No. Por política estricta de privacidad bloquea cualquier fotografía corporal o selfie (solo admite fotos opcionales de platos de comida, tablas nutricionales o máquinas de gimnasio) y no tiene carrito propio; los superalimentos enlazan directamente a https://naiu.bio.
+- ¿Un gimnasio puede contratar FORJA con su propia marca?: Sí. ARKA (https://arkadigital.co) implementa FORJA para gimnasios comerciales en Bogotá y Colombia con identidad propia y conexión a su propia clave de API para el coach interno.

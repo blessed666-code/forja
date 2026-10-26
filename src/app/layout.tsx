@@ -6,6 +6,8 @@ import { applyMotionLevel } from '@/components/motion/motionLevel'
 import { MotionProvider } from '@/components/motion/MotionProvider'
 import { SmoothScroll } from '@/components/motion/SmoothScroll'
 import { PwaRegister } from '@/components/pwa/PwaRegister'
+import { buildRootMetadata } from '@/lib/seo/metadata'
+import { getGlobalJsonLdGraph, serializeJsonLd } from '@/lib/seo/schema'
 import './globals.css'
 
 const MOTION_SCRIPT = `(${applyMotionLevel.toString()})();window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',${applyMotionLevel.toString()});`
@@ -13,38 +15,25 @@ const MOTION_SCRIPT = `(${applyMotionLevel.toString()})();window.matchMedia('(pr
 const bigShoulders = Big_Shoulders({
   subsets: ['latin'],
   axes: ['opsz'],
+  display: 'swap',
   variable: '--font-big-shoulders',
 })
 
 const figtree = Figtree({
   subsets: ['latin'],
   weight: ['400', '600'],
+  display: 'swap',
   variable: '--font-figtree',
 })
 
 const plexMono = IBM_Plex_Mono({
   subsets: ['latin'],
   weight: ['400'],
+  display: 'swap',
   variable: '--font-plex-mono',
 })
 
-export const metadata: Metadata = {
-  title: {
-    default: 'FORJA',
-    template: '%s · FORJA',
-  },
-  description: 'Entrena los días que elegiste. Con exigencia. Una muestra de ARKA · aliado NAIU.',
-  manifest: '/manifest.webmanifest',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'black-translucent',
-    title: 'FORJA',
-  },
-  icons: {
-    icon: '/icon.svg',
-    apple: '/apple-touch-icon.png',
-  },
-}
+export const metadata: Metadata = buildRootMetadata()
 
 export const viewport: Viewport = {
   themeColor: '#0C0F0E',
@@ -59,12 +48,17 @@ interface RootLayoutProps {
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
+  const globalJsonLd = serializeJsonLd(getGlobalJsonLdGraph())
+
   return (
     <html lang="es-CO" suppressHydrationWarning className={`${bigShoulders.variable} ${figtree.variable} ${plexMono.variable}`}>
       <body className="bg-bg font-sans text-text antialiased">
         <Script id="arka-motion" strategy="beforeInteractive">
           {MOTION_SCRIPT}
         </Script>
+        <script id="forja-schema-jsonld" type="application/ld+json">
+          {globalJsonLd}
+        </script>
         <a
           href="#contenido"
           className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-ink"
