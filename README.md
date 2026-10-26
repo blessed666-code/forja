@@ -34,7 +34,7 @@ Cada ejercicio pertenece a un vector de fuerza específico (`SUP_01` a `SUP_13`,
 ### 3. Nutrición Clínica & Alianza Oficial NAIU
 - **Metabolismo Basal (TMB/TDEE):** Fórmulas clínicas de **Mifflin-St Jeor** con factor de actividad ajustado por días de entreno.
 - **Macronutrientes:** Ratio óptimo de proteína a **2.0 g/kg**, grasas funcionales y carbohidratos de energía limpia.
-- **Superalimentos Funcionales NAIU:** Recomendación contextual exclusiva de superalimentos peruanos puros (Maca Negra para fuerza y pre-entreno, Maca Roja para balance hormonal y glúteo, Maca Amarilla para fatiga/adaptógeno).
+- **Superalimentos Funcionales NAIU:** Recomendación contextual exclusiva del catálogo real de NAIU Vital (`naiu.bio`): Maca Peruana Negra para fuerza y pre-entreno, Maca Roja Peruana para balance hormonal y glúteo, Camu Camu para síntesis de colágeno articular y cortisol, Chontaduro en Polvo para energía sostenida, y Café / Cacao orgánico de la Sierra Nevada.
 
 ### 4. Accesibilidad Web Obligatoria (WCAG 2.2 Nivel AA)
 - **Targets Táctiles:** Botonera ergonómica en zona del pulgar con altura mínima de **56px** (`h-14`), superando el mínimo de 44px.

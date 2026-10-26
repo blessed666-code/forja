@@ -1,6 +1,7 @@
 import { ABS_CIRCUITS, WARMUP_LOWER, WARMUP_UPPER } from './fixedBlocks'
 import { MASTER_EXERCISES } from './masterExercises'
-import type { Exercise } from './types'
+import { BIOMECHANICAL_SLOTS } from './slots'
+import type { Exercise, SlotId } from './types'
 
 const BASE_EXERCISES: readonly Exercise[] = [
   // Torso A
@@ -709,9 +710,20 @@ function trx(rows: TrxRow[]): Exercise[] {
 const ABS_EXERCISES = Object.values(ABS_CIRCUITS).flatMap((c) => c.exercises)
 const WARMUP_EXERCISES = [...WARMUP_UPPER.exercises, ...WARMUP_LOWER.exercises]
 
+const REVERSE_SLOT_MAP = new Map<string, SlotId>()
+for (const slot of Object.values(BIOMECHANICAL_SLOTS)) {
+  if (!REVERSE_SLOT_MAP.has(slot.defaultExerciseId)) REVERSE_SLOT_MAP.set(slot.defaultExerciseId, slot.id)
+  if (!REVERSE_SLOT_MAP.has(slot.machineAltId)) REVERSE_SLOT_MAP.set(slot.machineAltId, slot.id)
+  if (!REVERSE_SLOT_MAP.has(slot.freeAltId)) REVERSE_SLOT_MAP.set(slot.freeAltId, slot.id)
+  if (slot.safetyOverride && !REVERSE_SLOT_MAP.has(slot.safetyOverride.replaceWith)) {
+    REVERSE_SLOT_MAP.set(slot.safetyOverride.replaceWith, slot.id)
+  }
+}
+
 const ALL_EXERCISES_MAP = new Map<string, Exercise>()
 for (const ex of [...BASE_EXERCISES, ...MASTER_EXERCISES, ...WARMUP_EXERCISES, ...ABS_EXERCISES]) {
-  ALL_EXERCISES_MAP.set(ex.id, ex)
+  const inferredSlot = ex.slot_id ?? REVERSE_SLOT_MAP.get(ex.id)
+  ALL_EXERCISES_MAP.set(ex.id, inferredSlot ? { ...ex, slot_id: inferredSlot } : ex)
 }
 
 export const EXERCISES: readonly Exercise[] = Array.from(ALL_EXERCISES_MAP.values())

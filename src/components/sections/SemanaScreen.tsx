@@ -22,7 +22,7 @@ export function SemanaScreen() {
   const profile = useProfile()
   const monday = startOfWeek()
   const thisWeek = history.filter((entry) => new Date(entry.date) >= monday)
-  const todayIndex = (new Date().getDay() + 6) % 7
+  const activeSession = plan.sessions.length > 0 ? plan.sessions[history.length % plan.sessions.length] : undefined
 
   return (
     <div className="flex flex-col gap-6">
@@ -33,11 +33,11 @@ export function SemanaScreen() {
           {thisWeek.length} de {plan.sessions.length} sesiones cerradas · {profile.days} días
         </p>
       </header>
-      <ol className="flex flex-col gap-2">
+      <ol className="flex flex-col gap-2.5">
         {WEEKDAY_LABEL.map((label, index) => {
           const session = plan.sessions.find((item) => item.weekday === index)
           const isDone = Boolean(session && thisWeek.some((entry) => entry.sessionId === session.id))
-          const isToday = index === todayIndex
+          const isNext = Boolean(session && activeSession?.id === session.id)
 
           return (
             <li key={label}>
@@ -45,32 +45,41 @@ export function SemanaScreen() {
                 <m.div whileTap={{ scale: 0.98 }} transition={FITNESS_SPRING}>
                   <Link
                     href={`/sesion/${session.id}`}
-                    className={`flex min-h-14 items-center gap-4 rounded-lg border px-4 py-3 ${
-                      isToday ? 'border-primary bg-surface' : 'border-border bg-surface'
+                    className={`flex min-h-16 items-center gap-4 rounded-xl border px-4 py-3.5 transition-colors ${
+                      isNext ? 'border-primary bg-surface-2' : 'border-border bg-surface hover:border-primary/50'
                     }`}
                   >
                     <span className="w-10 font-mono text-sm text-muted">{label}</span>
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="font-semibold">
-                        {session.name}
-                        {isToday ? <span className="ml-2 text-sm font-normal text-muted">Hoy</span> : null}
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="flex flex-wrap items-center gap-2 font-semibold">
+                        <span>
+                          Día {session.dayNumber} · {session.name}
+                        </span>
+                        {isNext && (
+                          <span className="rounded-full bg-primary px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-primary-ink">
+                            Siguiente
+                          </span>
+                        )}
                       </span>
-                      <span className="text-sm text-muted">{session.exercises.length} ejercicios</span>
+                      <span className="text-xs text-muted">
+                        Calentamiento · <strong className="font-semibold text-text">{session.mainCount} ejercicios de fuerza</strong> · Abdomen
+                        {session.cardioNotes ? ' · Cardio' : ''}
+                      </span>
                     </span>
                     {isDone ? (
-                      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-ink">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-ink">
                         <Check className="h-4 w-4" aria-hidden="true" />
                         <span className="sr-only">Hecha</span>
                       </span>
                     ) : (
-                      <span className="text-sm text-muted">Pendiente</span>
+                      <span className="shrink-0 font-mono text-xs text-muted">Entrar</span>
                     )}
                   </Link>
                 </m.div>
               ) : (
-                <div className="flex min-h-14 items-center gap-4 rounded-lg px-4 py-3">
+                <div className="flex min-h-12 items-center gap-4 rounded-lg px-4 py-2.5">
                   <span className="w-10 font-mono text-sm text-muted">{label}</span>
-                  <span className="text-muted">Descanso</span>
+                  <span className="text-sm text-muted">Descanso y recuperación</span>
                 </div>
               )}
             </li>

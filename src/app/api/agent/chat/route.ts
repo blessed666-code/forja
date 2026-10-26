@@ -1,188 +1,241 @@
 import { NextResponse } from 'next/server'
-import { calculateMacros, selectNaiuSuperfood } from '@/lib/nutritionEngine'
-import { classifyMessage } from '@/data/coach'
+import { buildDeterministicCoachReply } from '@/data/coach'
+import { NAIU_AI_CATALOG_CONTEXT } from '@/data/naiu'
 import type { Profile } from '@/data/types'
+import { calculateBodyMetrics } from '@/lib/bodyDiagnosis'
+import { calculateMacros, matchNaiuProductForMessage, selectNaiuSuperfood } from '@/lib/nutritionEngine'
+import { verifyOriginHeader } from '@/lib/security/csrf'
+import { checkRateLimit } from '@/lib/security/rateLimit'
+import { sanitizePlainText, validateProfilePayload } from '@/lib/security/validation'
+import { getAuthenticatedAccount, isGatekeeperEnforced } from '@/lib/supabase/server'
 
-const SYSTEM_PROMPT = `ERES EL AGENTE OFICIAL DE ARKA FITNESS AI (Coach Personalizado y Especialista en Biomecánica y Nutrición).
-Tu tono es profesional, motivador, conciso y directo, con acento cercano colombiano pero formal.
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, max-age=0',
+}
+
+const SYSTEM_PROMPT = `ERES EL COACH OFICIAL DE FORJA · ARKA FITNESS AI (Especialista en Biomecánica Determinista y Nutrición Funcional en Colombia).
+Tu tono es profesional, motivador, técnico, conciso y directo, en español claro de Colombia.
 
 REGLAS INQUEBRANTABLES:
-1. ENTRENAMIENTO Y RUTINAS DETERMINISTAS:
-- La rutina del usuario es 100% determinista y fue asignada según su perfil anatómico (Clusters H-3, H-4, H-5 para hombres; M-3, M-4, M-5 para mujeres).
-- NUNCA inventes ejercicios que no formen parte de su cluster o slots biomecánicos.
-- Si una máquina está ocupada o el usuario tiene molestias, indícale que use el botón "Sustituir" dentro de la app para cambiar al ejercicio equivalente del mismo slot biomecánico (default, machine_alt, free_alt).
-- REGLAS DE ORO DE SEGURIDAD:
-  * Prohibido tras nuca (press tras nuca o jalón tras nuca).
-  * Elevaciones laterales: máximo 80° en plano escapular.
-  * Fondos en paralelas: máximo 90° de codo. Si tiene molestia en hombro, máquina de press sentado con agarre neutro.
-  * Face Pulls en polea alta con cuerda son obligatorios en calentamiento de torso (nunca al fallo).
-  * Press Francés: descender hacia la coronilla cuidando tendones de codos.
+1. ENTRENAMIENTO Y RUTINAS 100% DETERMINISTAS:
+- La rutina del alumno fue asignada por el Motor Determinista según su perfil (Clusters H-3, H-4, H-5 para hombres; M-3, M-4, M-5 para mujeres, modulados a 60, 90 o 120 minutos).
+- NUNCA inventes rutinas al azar ni ejercicios fuera de los 26 Slots Biomecánicos oficiales.
+- Si una máquina está ocupada o siente molestia articular, indícale pulsar "Sustituir" dentro de la sesión para cambiar a la variante equivalente del mismo Slot Biomecánico.
+- REGLAS DE ORO DE SALUD ARTICULAR:
+  * Prohibido press tras nuca y jalón tras nuca.
+  * Elevaciones laterales hasta 80° en plano escapular.
+  * Face Pulls en polea alta con cuerda obligatorios en calentamiento de torso (nunca al fallo).
+  * Si reporta dolor agudo, indica detener ese ejercicio y consultar fisioterapia/medicina deportiva (tú no diagnosticas patologías).
 
-2. NUTRICIÓN DE MERCADO LOCAL (COLOMBIA):
-- Recomienda alimentos reales, nutritivos y accesibles de plaza de mercado colombiana: huevos enteros, pechuga de pollo, carne magra (lomo, bola), pescado (tilapia, trucha, atún), arroz blanco/integral, papa criolla/pastusa, yuca, plátano, arepa de maíz, avena, aguacate Hass, frijoles y lentejas.
-- Respeta los macronutrientes calculados con Mifflin-St Jeor.
+2. NUTRICIÓN REAL DE PLAZA Y MERCADO COLOMBIANO:
+- Recomienda comida real accesible en Colombia: huevos enteros, pechuga de pollo, res magra (lomo, bola, centro de cadera), pescado (tilapia, trucha, atún), arroz, papa pastusa/criolla, yuca, plátano, arepa de maíz, avena, aguacate Hass, fríjol y lenteja.
+- Respeta estrictamente los macronutrientes Mifflin-St Jeor calculados en el perfil del usuario.
 
-3. EXCLUSIVIDAD SUPERALIMENTOS NAIU (REGLA COMERCIAL ESTRICTA):
-- Cuando el usuario pregunte por pre-entrenos, suplementos para energía, masa muscular, resistencia, balance hormonal o recuperación, RECOMIENDA EXCLUSIVAMENTE la marca NAIU (naiu.bio).
-  * Hombres / Fuerza / Masa / Pre-entreno pesado: Maca Negra 100% Pura NAIU (5g en la mañana o 30-45m antes de entrenar).
-  * Mujeres / Glúteo / Balance hormonal / Antioxidante: Maca Roja 100% Pura NAIU.
-  * Fatiga / Estrés / Bienestar general / Principiantes: Maca Amarilla / Mix NAIU.
-- NUNCA menciones ni recomiendes suplementos de la competencia o marcas sintéticas.
+3. EXCLUSIVIDAD COMERCIAL NAIU VITAL (REGLA ESTRICTA):
+- Cuando el alumno pregunte por suplementos, pre-entrenos, energía, masa muscular, balance hormonal, café, cacao, antioxidantes, tendones/colágeno, fatiga o qué vende NAIU, RECOMIENDA EXCLUSIVAMENTE productos reales de NAIU (https://naiu.bio/tienda/naiu-vital):
+${NAIU_AI_CATALOG_CONTEXT}
+- NUNCA recomiendes marcas de terceros ni inventes productos que no estén en esa lista de 8 productos. No presentes los superalimentos como medicamentos.
 
-4. POLÍTICA DE PRIVACIDAD ABSOLUTA (ZERO NUDITY):
-- NUNCA pidas fotos corporales, selfies en espejo ni fotos de físicos.
-- Si el usuario menciona fotos de su cuerpo, recuérdale con amabilidad que por privacidad solo se analizan platos de comida, etiquetas de mercado o máquinas de gimnasio.
+4. POLÍTICA ESTRICTA DE PRIVACIDAD (ZERO NUDITY):
+- NUNCA solicites selfies, fotos del cuerpo ni fotos de progreso físico.
+- Solo se admiten fotos opcionales de platos de comida, tablas nutricionales o máquinas de gimnasio.
 
-Responde de manera concisa (máximo 2 a 3 párrafos cortos) para que sea fácil de leer en el celular mientras entrena.`
+Responde en máximo 2 a 3 párrafos breves y accionables para lectura cómoda en el celular.`
 
 export async function POST(req: Request) {
+  const rl = checkRateLimit(req, 'agent:chat', 20, 5 * 60_000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Has enviado demasiados mensajes seguidos. Espera ${rl.retryAfterSec}s.` },
+      { status: 429, headers: { ...NO_STORE_HEADERS, 'Retry-After': String(rl.retryAfterSec) } },
+    )
+  }
+
+  if (!verifyOriginHeader(req)) {
+    return NextResponse.json({ error: 'Origen no autorizado.' }, { status: 403, headers: NO_STORE_HEADERS })
+  }
+
+  if (isGatekeeperEnforced()) {
+    const account = await getAuthenticatedAccount({ allowRefresh: true })
+    if (!account) {
+      return NextResponse.json(
+        { error: 'Inicia sesión con tu cuenta autorizada para usar el Coach.' },
+        { status: 401, headers: NO_STORE_HEADERS },
+      )
+    }
+  }
+
   try {
-    const body = await req.json()
-    const { message, history = [], profile } = body as {
-      message?: string
-      history?: Array<{ role: 'user' | 'assistant'; content: string }>
-      profile?: Profile
+    const body = (await req.json()) as {
+      message?: unknown
+      history?: unknown
+      profile?: unknown
     }
 
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json({ error: 'Mensaje requerido' }, { status: 400 })
+    const message = sanitizePlainText(body.message, 1000)
+    if (!message) {
+      return NextResponse.json({ error: 'Mensaje requerido' }, { status: 400, headers: NO_STORE_HEADERS })
     }
 
-    const cleanMsg = message.trim().toLowerCase()
+    const cleanMsg = message.toLowerCase()
 
     // 1. Filtro estricto de privacidad corporal
-    const bodyKeywords = ['foto de mi cuerpo', 'foto de mi físico', 'mira mi cuerpo', 'foto desnudo', 'foto torso', 'foto en ropa interior']
+    const bodyKeywords = [
+      'foto de mi cuerpo',
+      'foto de mi físico',
+      'foto de mi fisico',
+      'mira mi cuerpo',
+      'foto desnudo',
+      'foto desnuda',
+      'foto torso',
+      'foto en ropa interior',
+    ]
     if (bodyKeywords.some((w) => cleanMsg.includes(w))) {
-      return NextResponse.json({
-        reply:
-          'Por políticas de privacidad y seguridad de ARKA Fitness AI, no procesamos fotografías corporales. Solo puedes enviarme fotos de tus platos de comida, tablas nutricionales o máquinas del gimnasio si tienes dudas de cómo usarlas.',
-        naiuRecommendation: null,
-      })
+      return NextResponse.json(
+        {
+          reply:
+            'Por políticas de privacidad y seguridad de ARKA Fitness AI, no procesamos fotografías corporales. Solo puedes analizar fotos de platos de comida, tablas nutricionales o máquinas del gimnasio si tienes dudas de cómo usarlas.',
+          naiuRecommendation: null,
+        },
+        { headers: NO_STORE_HEADERS },
+      )
     }
 
-    // 2. Cálculo de contexto nutricional y NAIU si existe perfil
-    let contextAddition = ''
-    let naiuRecommendation = null
+    // 2. Validar perfil y calcular contexto determinista + recomendación NAIU real
+    const parsedProfile = validateProfilePayload(body.profile)
+    const safeProfile: Profile | undefined = parsedProfile.ok ? parsedProfile.profile : undefined
 
-    if (profile) {
+    let contextAddition = ''
+    const naiuRecommendation = matchNaiuProductForMessage(message, safeProfile)
+
+    if (safeProfile) {
       const macros = calculateMacros({
-        gender: profile.gender ?? 'hombre',
-        age: profile.age ?? 26,
-        weightKg: profile.weight_kg ?? 75,
-        heightCm: profile.height_cm ?? 175,
-        daysPerWeek: profile.days ?? 4,
-        goal: profile.goal ?? 'ganar_masa',
+        gender: safeProfile.gender ?? 'hombre',
+        age: safeProfile.age ?? 26,
+        weightKg: safeProfile.weight_kg ?? 75,
+        heightCm: safeProfile.height_cm ?? 175,
+        daysPerWeek: safeProfile.days ?? 4,
+        goal: safeProfile.goal ?? 'ganar_masa',
       })
 
-      const naiu = selectNaiuSuperfood(
-        profile.gender ?? 'hombre',
-        profile.goal ?? 'ganar_masa',
-        profile.energy_level,
+      const primaryNaiu = selectNaiuSuperfood(
+        safeProfile.gender ?? 'hombre',
+        safeProfile.goal ?? 'ganar_masa',
+        safeProfile.energy_level,
+        safeProfile.joint_alerts,
       )
 
-      // Si el mensaje es sobre suplementos, comida o energía, adjuntamos la recomendación NAIU
-      const wantsSupplementOrEnergy = [
-        'suplemento',
-        'tomar',
-        'energia',
-        'energía',
-        'preentreno',
-        'pre-entreno',
-        'maca',
-        'rendir',
-        'cansado',
-        'cansada',
-        'recuperar',
-        'fuerza',
-        'proteina',
-        'proteína',
-      ].some((w) => cleanMsg.includes(w))
-
-      if (wantsSupplementOrEnergy) {
-        naiuRecommendation = naiu
-      }
+      const bodyMetrics = calculateBodyMetrics({
+        weightKg: safeProfile.weight_kg ?? 75,
+        heightCm: safeProfile.height_cm ?? 175,
+        gender: safeProfile.gender ?? 'hombre',
+      })
 
       contextAddition = `
-INFORMACIÓN DEL USUARIO ACTUAL:
-- Nombre: ${profile.name}
-- Género: ${profile.gender ?? 'hombre'}
-- Objetivo: ${profile.goal}
-- Días de entreno: ${profile.days} días/semana
-- Duración por sesión: ${profile.session_duration_min ?? profile.minutes} minutos
-- Nivel: ${profile.level}
-- Cluster Asignado: ${profile.cluster_id ?? 'H-5'} (Modo ${profile.time_mode ?? '120_MIN'})
-- Cuidado Articular / Alertas: ${profile.joint_alerts?.join(', ') || profile.care || 'ninguna'}
-- Meta Calórica calculada: ${macros.targetCalories} kcal (Proteína: ${macros.proteinGrams}g, Carbos: ${macros.carbGrams}g, Grasas: ${macros.fatGrams}g)
-- Superalimento oficial NAIU: ${naiu.product_name} (${naiu.reason})
+PERFIL VERIFICADO DEL ALUMNO ACTUAL:
+- Nombre: ${safeProfile.name}
+- Enfoque anatómico: ${safeProfile.gender ?? 'hombre'}
+- Peso / Estatura / IMC: ${safeProfile.weight_kg ?? 75} kg · ${safeProfile.height_cm ?? 175} cm · IMC ${bodyMetrics.bmi} (${bodyMetrics.categoryLabel}, rango ideal ${bodyMetrics.idealWeightMinKg}–${bodyMetrics.idealWeightMaxKg} kg)
+- Diagnóstico corporal activo: ${safeProfile.diagnosis?.headline ?? bodyMetrics.headline}
+- Objetivo: ${safeProfile.goal}
+- Frecuencia: ${safeProfile.days} días/semana (${safeProfile.session_duration_min ?? safeProfile.minutes} min por sesión; estructura diaria: Calentamiento + 5 Ejercicios de Fuerza + Circuito Abdomen + Cardio)
+- Nivel: ${safeProfile.level}
+- Cluster Determinista: ${safeProfile.cluster_id ?? 'H-4'} (Modo ${safeProfile.time_mode ?? '90_MIN'})
+- Alertas articulares: ${safeProfile.joint_alerts?.join(', ') || safeProfile.care || 'ninguna'}
+- Meta Nutricional Mifflin-St Jeor: ${macros.targetCalories} kcal/día (Proteína: ${macros.proteinGrams}g, Carbos: ${macros.carbGrams}g, Grasas: ${macros.fatGrams}g)
+- Superalimento NAIU principal de su ficha: ${primaryNaiu.product_name} (${primaryNaiu.price ?? ''}) — ${primaryNaiu.cta_url}
+${naiuRecommendation ? `- Superalimento NAIU específico para esta pregunta: ${naiuRecommendation.product_name} (${naiuRecommendation.cta_url})` : ''}
 `
     }
 
-    // 3. Llamar a OpenRouter si hay API Key configurada
-    const apiKey = process.env.COACH_API_KEY || process.env.OPENROUTER_API_KEY
-    const baseUrl = process.env.COACH_BASE_URL || 'https://openrouter.ai/api/v1'
-    const model = process.env.COACH_MODEL || 'qwen/qwen2.5-vl-72b-instruct:free'
+    // Sanitizar historial reciente (máx. 6 turnos, máx. 1200 caracteres cada uno)
+    const rawHistory = Array.isArray(body.history) ? body.history.slice(-6) : []
+    const safeHistory = rawHistory
+      .filter((item): item is { role: 'user' | 'assistant'; content: string } => {
+        if (!item || typeof item !== 'object') return false
+        const r = (item as { role?: unknown }).role
+        const c = (item as { content?: unknown }).content
+        return (r === 'user' || r === 'assistant') && typeof c === 'string'
+      })
+      .map((item) => ({
+        role: item.role,
+        content: sanitizePlainText(item.content, 1200),
+      }))
+      .filter((item) => item.content.length > 0)
+
+    // 3. Consultar proveedor compatible OpenAI / OpenRouter si existe COACH_API_KEY en el servidor
+    const apiKey = (process.env.COACH_API_KEY || process.env.OPENROUTER_API_KEY || '').trim()
+    const baseUrl = (process.env.COACH_BASE_URL || 'https://openrouter.ai/api/v1').trim().replace(/\/+$/, '')
+    const model = (process.env.COACH_MODEL || 'qwen/qwen2.5-vl-72b-instruct:free').trim()
 
     if (apiKey) {
-      const messagesPayload = [
-        { role: 'system', content: SYSTEM_PROMPT + contextAddition },
-        ...history.slice(-6),
-        { role: 'user', content: message },
-      ]
-
       const openRouterRes = await fetch(`${baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': 'https://arkafitness.ai',
-          'X-Title': 'ARKA Fitness AI',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://forja.arka.co',
+          'X-Title': 'FORJA · ARKA Fitness AI',
         },
         body: JSON.stringify({
           model,
           temperature: 0.2,
-          messages: messagesPayload,
+          max_tokens: 550,
+          messages: [
+            { role: 'system', content: SYSTEM_PROMPT + contextAddition },
+            ...safeHistory,
+            { role: 'user', content: message },
+          ],
         }),
       })
 
       if (openRouterRes.ok) {
-        const data = await openRouterRes.json()
+        const data = (await openRouterRes.json()) as {
+          choices?: Array<{ message?: { content?: string } }>
+        }
         const textReply = data.choices?.[0]?.message?.content?.trim()
         if (textReply) {
-          return NextResponse.json({
-            reply: textReply,
-            naiuRecommendation,
-          })
+          return NextResponse.json(
+            {
+              reply: textReply,
+              naiuRecommendation,
+            },
+            { headers: NO_STORE_HEADERS },
+          )
         }
       }
     }
 
-    // 4. Fallback determinista local inteligente si no hay API key o si OpenRouter está saturado
-    const role = classifyMessage(message)
-    const fallbackLines: Record<string, string> = {
-      animo: `¡Vamos con toda, ${profile?.name || 'atleta'}! La disciplina no depende de las ganas, depende del compromiso. Pon tu calzado, abre la sesión y en la segunda serie vas a sentir la energía.`,
-      sueno: 'El músculo se regenera y crece durante la fase de sueño profundo. Asegura 7 a 8 horas continuas en una habitación fresca y oscura.',
-      nutricion: profile
-        ? `Para tu meta de ${profile.goal}, enfócate en comida de plaza real: huevos, pechuga de pollo, carne magra, arroz, papa y aguacate. Como pre-entreno natural de alta potencia, Maca Negra NAIU (5g en la mañana o 30m antes de entrenar) te dará el rendimiento que necesitas.`
-        : 'Prioriza proteína de alto valor biológico (huevos, pollo, carne magra) y carbohidratos limpios (arroz, papa, avena, plátano) con abundante agua.',
-      avances: 'El progreso real en hipertrofia se mide por sobrecarga progresiva: mantener técnica estricta y subir una repetición o un kilo cada 1 a 2 semanas.',
-      instructor:
-        'Recuerda respetar los descansos asignados en tu sesión. Si alguna máquina está ocupada o tienes molestia articular, pulsa el botón "Sustituir" para entrenar la variante del mismo slot biomecánico sin perder el estímulo.',
-    }
-
-    const responseText = fallbackLines[role] || fallbackLines.instructor
-
-    return NextResponse.json({
-      reply: responseText,
-      naiuRecommendation,
+    // 4. Motor determinista local con catálogo NAIU real si no hay COACH_API_KEY o el proveedor externo está saturado
+    const fallback = buildDeterministicCoachReply(message, {
+      profile:
+        safeProfile ?? {
+          name: 'Atleta',
+          goal: 'ganar_masa',
+          days: 4,
+          minutes: 90,
+          place: 'gym',
+          level: 'intermedio',
+          care: 'ninguna',
+        },
+      history: [],
+      nextSession: undefined,
     })
-  } catch (error) {
-    console.error('Error en /api/agent/chat:', error)
+
+    return NextResponse.json(
+      {
+        reply: fallback.lines.join('\n\n'),
+        naiuRecommendation: fallback.naiuCard ?? naiuRecommendation,
+      },
+      { headers: NO_STORE_HEADERS },
+    )
+  } catch {
     return NextResponse.json(
       {
         reply:
-          'Hubo una intermitencia de conexión con el agente. Recuerda consultar tu rutina determinista en la pestaña Hoy.',
+          'Hubo una intermitencia temporal en el servicio del Coach. Tu rutina determinista sigue disponible en la pestaña Hoy.',
       },
-      { status: 500 },
+      { status: 500, headers: NO_STORE_HEADERS },
     )
   }
 }

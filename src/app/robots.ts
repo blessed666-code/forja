@@ -9,12 +9,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: ['Googlebot', 'OAI-SearchBot', 'Claude-SearchBot', 'PerplexityBot'],
         allow: '/',
-        disallow: ['/api/'],
+        disallow: ['/api/', '/admin', '/acceso'],
       },
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/'],
+        disallow: ['/api/', '/admin', '/acceso'],
       },
     ],
     sitemap: `${siteUrl}/sitemap.xml`,

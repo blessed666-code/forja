@@ -1,4 +1,5 @@
-import type { Gender, Goal, NaiuRecommendation } from '@/data/types'
+import { getNaiuProduct, type NaiuProductSlug } from '@/data/naiu'
+import type { Gender, Goal, JointAlert, NaiuRecommendation, Profile } from '@/data/types'
 
 export interface MacroCalculationInput {
   gender: Gender
@@ -23,7 +24,7 @@ export interface MacroCalculationResult {
 export function calculateMacros(input: MacroCalculationInput): MacroCalculationResult {
   const { gender, age, weightKg, heightCm, daysPerWeek, goal } = input
 
-  // Fórmula Mifflin-St Jeor
+  // Fórmula clínica Mifflin-St Jeor
   let tmb = 10 * weightKg + 6.25 * heightCm - 5 * age
   if (gender === 'hombre') {
     tmb += 5
@@ -31,7 +32,7 @@ export function calculateMacros(input: MacroCalculationInput): MacroCalculationR
     tmb -= 161
   }
 
-  // Factor de actividad física según días de entrenamiento
+  // Factor de actividad física según días reales de entrenamiento
   let activityFactor = 1.55
   if (daysPerWeek <= 3) activityFactor = 1.45
   else if (daysPerWeek === 4) activityFactor = 1.55
@@ -39,22 +40,19 @@ export function calculateMacros(input: MacroCalculationInput): MacroCalculationR
 
   const tdee = Math.round(tmb * activityFactor)
 
-  // Ajuste según objetivo
+  // Ajuste calórico determinista según objetivo
   let calorieAdjustment = 1.0
-  let proteinPerKg = 2.0
+  const proteinPerKg = 2.0
   let objectiveNote = 'Mantenimiento y recomposición muscular'
 
   if (goal === 'bajar_peso' || goal === 'grasa') {
     calorieAdjustment = 0.8 // Déficit del 20%
-    proteinPerKg = 2.0
-    objectiveNote = 'Déficit calórico inteligente para oxidar grasa protegiendo masa muscular'
+    objectiveNote = 'Déficit calórico inteligente para oxidar grasa protegiendo masa muscular con pesas'
   } else if (goal === 'ganar_masa' || goal === 'masa' || goal === 'fuerza') {
     calorieAdjustment = 1.12 // Superávit controlado del 12%
-    proteinPerKg = 2.0
-    objectiveNote = 'Superávit calórico controlado para hipertrofia limpia sin grasa innecesaria'
+    objectiveNote = 'Superávit calórico controlado para hipertrofia limpia sin acumular grasa innecesaria'
   } else {
-    calorieAdjustment = 1.0 // Mantenimiento
-    proteinPerKg = 2.0
+    calorieAdjustment = 1.0
     objectiveNote = 'Recomposición corporal: ganar tono muscular mientras se afina el porcentaje graso'
   }
 
@@ -77,48 +75,154 @@ export function calculateMacros(input: MacroCalculationInput): MacroCalculationR
   }
 }
 
+export function buildNaiuRecommendation(slug: NaiuProductSlug, customReason?: string): NaiuRecommendation {
+  const product = getNaiuProduct(slug)
+  return {
+    show_naiu_card: true,
+    product_slug: product.id,
+    product_name: `${product.name} — NAIU`,
+    price: product.price,
+    reason: customReason ?? product.benefit,
+    dosage: product.dosage,
+    cta_text: `Ver ${product.name} (${product.price})`,
+    cta_url: product.url,
+  }
+}
+
 export function selectNaiuSuperfood(
   gender: Gender,
   goal: Goal,
   energyLevel?: 'bajo' | 'normal' | 'alto',
+  jointAlerts?: JointAlert[],
 ): NaiuRecommendation {
-  // Disparador 1: Mujer con enfoque glúteo / tonificación / balance hormonal
-  if (gender === 'mujer' && (goal === 'marcar_tonificar' || goal === 'recomposicion' || goal === 'bajar_peso')) {
-    return {
-      show_naiu_card: true,
-      product_slug: 'maca-roja-naiu',
-      product_name: 'Maca Roja 100% Pura — NAIU',
-      reason:
-        'Optimizada para la densidad ósea, balance hormonal femenino, reducción del estrés oxidativo y tonificación de glúteo.',
-      dosage: '5g (1 cucharadita) en la mañana con el desayuno o en el batido post-entrenamiento.',
-      cta_text: 'Adquirir Maca Roja en NAIU',
-      cta_url: 'https://naiu.bio',
-    }
+  // Disparador 1: Energía percibida baja + cuidado articular -> Camu Camu (colágeno + cortisol/recuperación)
+  if (energyLevel === 'bajo' && jointAlerts && jointAlerts.length > 0) {
+    return buildNaiuRecommendation(
+      'camu-camu',
+      'Por tu energía baja y cuidado articular activo, el Camu Camu NAIU aporta Vitamina C natural de alta absorción para síntesis de colágeno en tendones, menor fatiga y mejor recuperación.',
+    )
   }
 
-  // Disparador 2: Hombres o cualquier usuario con objetivo de ganar masa o fuerza pesada
-  if (goal === 'ganar_masa' || goal === 'masa' || goal === 'fuerza' || gender === 'hombre') {
-    return {
-      show_naiu_card: true,
-      product_slug: 'maca-negra-naiu',
-      product_name: 'Maca Negra 100% Pura — NAIU',
-      reason:
-        'Pre-entreno 100% natural. Aumenta la resistencia física, potencia la fuerza en series pesadas y mejora el enfoque mental sin alterar el sistema nervioso.',
-      dosage: '5g (1 cucharadita) 30 a 45 minutos antes de entrenar en agua o batido.',
-      cta_text: 'Adquirir Maca Negra en NAIU',
-      cta_url: 'https://naiu.bio',
-    }
+  // Disparador 2: Energía percibida baja al entrenar -> Chontaduro en Polvo o Maca según objetivo
+  if (energyLevel === 'bajo' && (goal === 'ganar_masa' || goal === 'masa')) {
+    return buildNaiuRecommendation(
+      'chontaduro',
+      'Para subir energía diaria y sostener tu etapa de masa muscular, el Chontaduro en Polvo NAIU aporta energía limpia del Pacífico, aminoácidos esenciales y micronutrientes.',
+    )
   }
 
-  // Disparador 3: Fatiga, energía baja o inicio de bienestar
-  return {
-    show_naiu_card: true,
-    product_slug: 'maca-amarilla-naiu',
-    product_name: 'Maca Amarilla / Mix — NAIU',
-    reason:
-      'Adaptógeno integral para vitalidad diaria, modulación del cortisol y resistencia frente a la fatiga laboral y física.',
-    dosage: '1 cucharadita diaria en las mañanas en café, infusión o avena.',
-    cta_text: 'Adquirir Maca Amarilla en NAIU',
-    cta_url: 'https://naiu.bio',
+  // Disparador 3: Mujer con enfoque glúteo / tonificación / recomposición / oxidación de grasa
+  if (gender === 'mujer' && (goal === 'marcar_tonificar' || goal === 'recomposicion' || goal === 'bajar_peso' || goal === 'grasa')) {
+    return buildNaiuRecommendation(
+      'maca-roja',
+      'Optimizada para vitalidad femenina, balance hormonal, densidad ósea, antioxidantes y mejor recuperación en tus sesiones de glúteo y pierna.',
+    )
   }
+
+  // Disparador 4: Energía baja general -> Camu Camu (fatiga / estrés oxidativo)
+  if (energyLevel === 'bajo') {
+    return buildNaiuRecommendation(
+      'camu-camu',
+      'Ideal cuando sientes fatiga o estrés alto: concentra Vitamina C y antioxidantes puros que modulan el cortisol y blindan tu recuperación diaria.',
+    )
+  }
+
+  // Disparador 5: Fuerza, masa muscular o pre-entreno natural (Hombres y Mujeres en hipertrofia/fuerza)
+  return buildNaiuRecommendation(
+    'maca-negra',
+    'Pre-entreno 100% natural para tus series pesadas: eleva resistencia física, potencia muscular y enfoque mental sin alterar el sistema nervioso.',
+  )
+}
+
+/**
+ * Detecta si la consulta del usuario en el Coach amerita recomendar un producto específico
+ * del catálogo real de NAIU Vital y devuelve la tarjeta exacta con su URL oficial.
+ */
+export function matchNaiuProductForMessage(message: string, profile?: Profile): NaiuRecommendation | null {
+  const q = message.toLowerCase()
+
+  if (['chocolate de mesa', 'chocolate caliente'].some((w) => q.includes(w))) {
+    return buildNaiuRecommendation('chocolate-mesa-cooagronevada')
+  }
+
+  if (['cacao', 'chocolate', 'bombeo', 'oxido nitrico', 'óxido nítrico'].some((w) => q.includes(w))) {
+    return buildNaiuRecommendation('cacao-seynekun')
+  }
+
+  if (['cafe', 'café', 'despertar', 'madrugar', 'mañana temprano'].some((w) => q.includes(w))) {
+    return buildNaiuRecommendation('cafe-seynekun')
+  }
+
+  if (['chontaduro', 'calorias extra', 'calorías extra', 'subir de peso', 'batido energetico', 'batido energético'].some((w) => q.includes(w))) {
+    return buildNaiuRecommendation('chontaduro')
+  }
+
+  if (
+    [
+      'camu',
+      'vitamina c',
+      'colageno',
+      'colágeno',
+      'tendon',
+      'tendón',
+      'articulacion',
+      'articulación',
+      'defensas',
+      'estres',
+      'estrés',
+      'cortisol',
+      'recuperar',
+      'recuperacion',
+      'recuperación',
+    ].some((w) => q.includes(w))
+  ) {
+    return buildNaiuRecommendation('camu-camu')
+  }
+
+  if (['maca roja', 'hormonal', 'menstrual', 'ciclo', 'gluteo', 'glúteo'].some((w) => q.includes(w))) {
+    return buildNaiuRecommendation('maca-roja')
+  }
+
+  if (['maca negra'].some((w) => q.includes(w))) {
+    return buildNaiuRecommendation('maca-negra')
+  }
+
+  const generalTriggers = [
+    'naiu',
+    'suplemento',
+    'suplementos',
+    'superalimento',
+    'superalimentos',
+    'que venden',
+    'qué venden',
+    'catalogo',
+    'catálogo',
+    'precio',
+    'comprar',
+    'tomar',
+    'energia',
+    'energía',
+    'preentreno',
+    'pre-entreno',
+    'maca',
+    'rendir',
+    'cansado',
+    'cansada',
+    'fatiga',
+    'fuerza',
+    'batido',
+    'proteina',
+    'proteína',
+  ]
+
+  if (generalTriggers.some((w) => q.includes(w))) {
+    return selectNaiuSuperfood(
+      profile?.gender ?? 'hombre',
+      profile?.goal ?? 'ganar_masa',
+      profile?.energy_level,
+      profile?.joint_alerts,
+    )
+  }
+
+  return null
 }

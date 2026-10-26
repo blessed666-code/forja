@@ -109,6 +109,23 @@ export type TimeMode = '60_MIN' | '90_MIN' | '120_MIN'
 export type AbsCircuitId = 'ABS_CIRCUIT_A' | 'ABS_CIRCUIT_B' | 'ABS_CIRCUIT_C' | 'ABS_CIRCUIT_D'
 export type WarmupBlockId = 'WARMUP_UPPER' | 'WARMUP_LOWER'
 
+export type SessionPhase = 'warmup' | 'strength' | 'abs' | 'cardio'
+export type BodyCategory = 'bajo_peso' | 'peso_ideal' | 'sobrepeso' | 'obesidad'
+
+export interface DiagnosisSummary {
+  bmi: number
+  category: BodyCategory
+  categoryLabel: string
+  idealWeightMinKg: number
+  idealWeightMaxKg: number
+  weightDeltaKg: number
+  suggestedGoal: Goal
+  headline: string
+  aiInsights: string[]
+  source: 'ai' | 'deterministic'
+  generatedAt: string
+}
+
 export interface Exercise {
   id: string
   name: string
@@ -129,6 +146,9 @@ export interface Exercise {
   slot_id?: SlotId
   effort_type?: EffortType
   safety_note?: string
+  phase?: SessionPhase
+  block_number?: number
+  block_badge?: string
 }
 
 export interface BiomechanicalSlot {
@@ -160,8 +180,17 @@ export interface TimeModulation {
 
 export interface NaiuRecommendation {
   show_naiu_card: boolean
-  product_slug: 'maca-negra-naiu' | 'maca-roja-naiu' | 'maca-amarilla-naiu'
+  product_slug:
+    | 'maca-negra'
+    | 'maca-roja'
+    | 'camu-camu'
+    | 'chontaduro'
+    | 'cafe-seynekun'
+    | 'cacao-seynekun'
+    | 'cafe-cooagronevada'
+    | 'chocolate-mesa-cooagronevada'
   product_name: string
+  price?: string
   reason: string
   dosage: string
   cta_text: string
@@ -187,6 +216,7 @@ export interface Profile {
   energy_level?: 'bajo' | 'normal' | 'alto'
   favorite_overrides?: Record<string, string>
   naiu_stack?: string[]
+  diagnosis?: DiagnosisSummary
 }
 
 export const GOAL_LABEL: Record<Goal, string> = {

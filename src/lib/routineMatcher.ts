@@ -25,7 +25,7 @@ export function matchRoutineCluster(quiz: QuizInput): {
   const clusterId = resolveClusterId(quiz.gender, quiz.daysPerWeek)
   const timeMode = resolveTimeMode(quiz.sessionMinutes)
   const clusterDef = ROUTINE_CLUSTERS[clusterId]
-  const naiu = selectNaiuSuperfood(quiz.gender, quiz.goal, quiz.energyLevel)
+  const naiu = selectNaiuSuperfood(quiz.gender, quiz.goal, quiz.energyLevel, quiz.jointAlerts)
 
   const profile: Profile = {
     name: quiz.name.trim(),

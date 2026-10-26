@@ -7,7 +7,7 @@ import { useHistory, useProfile } from '@/lib/store'
 export function HoyLive() {
   const profile = useProfile()
   const history = useHistory()
-  const content = getHoyContent(profile, history.length)
+  const content = getHoyContent(profile, history.length, history)
 
   if (!content) {
     return <p>No hay sesión para hoy.</p>

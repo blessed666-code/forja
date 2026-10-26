@@ -1,7 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  agentRules: false,
+  poweredByHeader: false,
   devIndicators: {
     position: 'top-right',
   },
@@ -14,7 +14,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  // TODO(security): Implementar Content-Security-Policy estricta basada en nonces en middleware/proxy cuando se active Gatekeeper (Fase 5.3).
   async headers() {
     return [
       {
@@ -26,7 +25,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
+            value: 'DENY',
           },
           {
             key: 'Referrer-Policy',
@@ -34,7 +33,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'geolocation=(), microphone=()',
+            value: 'camera=(self), microphone=(), geolocation=(), payment=(), usb=()',
           },
         ],
       },

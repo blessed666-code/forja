@@ -7,12 +7,21 @@ import type {
   WarmupBlockId,
 } from './types'
 
+export type StrengthSlotEntry = SlotId | readonly [SlotId, SlotId]
+
 export interface ClusterSessionDef {
   id: string
   name: string
   weekday: number
   warmup: WarmupBlockId
   slots: SlotId[]
+  strengthBlocks: readonly [
+    StrengthSlotEntry,
+    StrengthSlotEntry,
+    StrengthSlotEntry,
+    StrengthSlotEntry,
+    StrengthSlotEntry,
+  ]
   absCircuit: AbsCircuitId
   cardioExerciseId: string
   cardioNotes: string
@@ -81,6 +90,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 0, // Lunes
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_04', 'SUP_01', 'SUP_06_A', 'SUP_02_A', 'SUP_07'],
+        strengthBlocks: ['SUP_04', 'SUP_01', 'SUP_06_A', 'SUP_02_A', 'SUP_07'],
         absCircuit: 'ABS_CIRCUIT_A',
         cardioExerciseId: 'bici-estatica-hiit',
         cardioNotes: '10 min Bicicleta estática HIIT (20s sprint / 40s suave).',
@@ -91,6 +101,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 1, // Martes
         warmup: 'WARMUP_LOWER',
         slots: ['INF_01', 'INF_02', 'INF_03_A', 'INF_05', 'INF_06', 'INF_08'],
+        strengthBlocks: ['INF_01', 'INF_02', 'INF_03_A', 'INF_05', ['INF_06', 'INF_08']],
         absCircuit: 'ABS_CIRCUIT_B',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinación 12-15% sin trote.',
@@ -101,6 +112,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 2, // Miércoles
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_02_B', 'SUP_03', 'SUP_08', 'SUP_10', 'SUP_11'],
+        strengthBlocks: ['SUP_02_B', 'SUP_03', 'SUP_08', 'SUP_10', 'SUP_11'],
         absCircuit: 'ABS_CIRCUIT_C',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinación suave o elíptica.',
@@ -111,6 +123,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 4, // Viernes
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_05', 'SUP_06_B', 'SUP_06_C', 'SUP_12', 'SUP_13'],
+        strengthBlocks: ['SUP_05', 'SUP_06_B', 'SUP_06_C', 'SUP_12', 'SUP_13'],
         absCircuit: 'ABS_CIRCUIT_D',
         cardioExerciseId: 'remo-ergometro-hiit',
         cardioNotes: '10 min Remo HIIT o Bici estática.',
@@ -121,6 +134,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 5, // Sábado
         warmup: 'WARMUP_LOWER',
         slots: ['INF_04_A', 'INF_02', 'INF_03_B', 'INF_06', 'INF_05', 'INF_08'],
+        strengthBlocks: ['INF_04_A', 'INF_02', 'INF_03_B', 'INF_06', ['INF_05', 'INF_08']],
         absCircuit: 'ABS_CIRCUIT_A',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada suave.',
@@ -142,6 +156,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 0, // Lunes
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_04', 'SUP_01', 'SUP_06_A', 'SUP_02_A', 'SUP_07'],
+        strengthBlocks: ['SUP_04', 'SUP_01', 'SUP_06_A', 'SUP_02_A', 'SUP_07'],
         absCircuit: 'ABS_CIRCUIT_A',
         cardioExerciseId: 'bici-estatica-hiit',
         cardioNotes: '10 min HIIT cardio.',
@@ -152,6 +167,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 1, // Martes
         warmup: 'WARMUP_LOWER',
         slots: ['INF_01', 'INF_02', 'INF_03_A', 'INF_05', 'INF_06', 'INF_08'],
+        strengthBlocks: ['INF_01', 'INF_02', 'INF_03_A', 'INF_05', ['INF_06', 'INF_08']],
         absCircuit: 'ABS_CIRCUIT_B',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada.',
@@ -162,6 +178,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 3, // Jueves
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_05', 'SUP_02_B', 'SUP_06_B', 'SUP_08', 'SUP_10', 'SUP_12'],
+        strengthBlocks: ['SUP_05', 'SUP_02_B', 'SUP_06_B', 'SUP_08', ['SUP_10', 'SUP_12']],
         absCircuit: 'ABS_CIRCUIT_C',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora suave.',
@@ -172,6 +189,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 4, // Viernes
         warmup: 'WARMUP_LOWER',
         slots: ['INF_04_A', 'INF_02', 'INF_03_B', 'INF_06', 'INF_05', 'INF_08'],
+        strengthBlocks: ['INF_04_A', 'INF_02', 'INF_03_B', 'INF_06', ['INF_05', 'INF_08']],
         absCircuit: 'ABS_CIRCUIT_D',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada suave.',
@@ -193,6 +211,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 0, // Lunes
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_01', 'SUP_04', 'SUP_06_B', 'SUP_07', 'SUP_08', 'SUP_10', 'SUP_12'],
+        strengthBlocks: ['SUP_01', 'SUP_04', 'SUP_06_B', ['SUP_07', 'SUP_08'], ['SUP_10', 'SUP_12']],
         absCircuit: 'ABS_CIRCUIT_A',
         cardioExerciseId: 'bici-estatica-hiit',
         cardioNotes: '10 min Bici HIIT.',
@@ -203,6 +222,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 2, // Miércoles
         warmup: 'WARMUP_LOWER',
         slots: ['INF_01', 'INF_04_A', 'INF_02', 'INF_03_A', 'INF_05', 'INF_06'],
+        strengthBlocks: ['INF_01', 'INF_04_A', 'INF_02', 'INF_03_A', ['INF_05', 'INF_06']],
         absCircuit: 'ABS_CIRCUIT_B',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada.',
@@ -213,6 +233,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 4, // Viernes
         warmup: 'WARMUP_UPPER',
         slots: ['INF_01', 'SUP_02_B', 'SUP_05', 'INF_06', 'INF_08', 'SUP_08', 'SUP_11'],
+        strengthBlocks: ['INF_01', 'SUP_02_B', 'SUP_05', ['INF_06', 'INF_08'], ['SUP_08', 'SUP_11']],
         absCircuit: 'ABS_CIRCUIT_C',
         cardioExerciseId: 'eliptica-suave',
         cardioNotes: '10 min Elíptica suave.',
@@ -234,6 +255,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 0, // Lunes
         warmup: 'WARMUP_LOWER',
         slots: ['INF_02', 'INF_01', 'INF_03_B', 'INF_05', 'INF_07_A'],
+        strengthBlocks: ['INF_02', 'INF_01', 'INF_03_B', 'INF_05', 'INF_07_A'],
         absCircuit: 'ABS_CIRCUIT_A',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada 12-15%.',
@@ -244,6 +266,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 1, // Martes
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_04', 'SUP_06_B', 'SUP_01', 'SUP_07', 'SUP_08'],
+        strengthBlocks: ['SUP_04', 'SUP_06_B', 'SUP_01', 'SUP_07', 'SUP_08'],
         absCircuit: 'ABS_CIRCUIT_B',
         cardioExerciseId: 'bici-estatica-hiit',
         cardioNotes: '10 min Cardio HIIT.',
@@ -254,6 +277,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 2, // Miércoles
         warmup: 'WARMUP_LOWER',
         slots: ['INF_04_A', 'INF_04_B', 'INF_03_B', 'INF_06', 'INF_08'],
+        strengthBlocks: ['INF_04_A', 'INF_04_B', 'INF_03_B', 'INF_06', 'INF_08'],
         absCircuit: 'ABS_CIRCUIT_C',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada suave.',
@@ -264,6 +288,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 4, // Viernes
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_05', 'SUP_06_C', 'SUP_10', 'SUP_11', 'SUP_12'],
+        strengthBlocks: ['SUP_05', 'SUP_06_C', 'SUP_10', 'SUP_11', 'SUP_12'],
         absCircuit: 'ABS_CIRCUIT_D',
         cardioExerciseId: 'bici-estatica-hiit',
         cardioNotes: '10 min HIIT en bicicleta o elíptica.',
@@ -274,6 +299,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 5, // Sábado
         warmup: 'WARMUP_LOWER',
         slots: ['INF_02', 'INF_04_B', 'INF_03_B', 'INF_07_B', 'INF_07_A'],
+        strengthBlocks: ['INF_02', 'INF_04_B', 'INF_03_B', 'INF_07_B', 'INF_07_A'],
         absCircuit: 'ABS_CIRCUIT_A',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada.',
@@ -295,6 +321,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 0, // Lunes
         warmup: 'WARMUP_LOWER',
         slots: ['INF_02', 'INF_01', 'INF_03_B', 'INF_05', 'INF_07_A'],
+        strengthBlocks: ['INF_02', 'INF_01', 'INF_03_B', 'INF_05', 'INF_07_A'],
         absCircuit: 'ABS_CIRCUIT_A',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada.',
@@ -305,6 +332,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 1, // Martes
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_04', 'SUP_06_B', 'SUP_01', 'SUP_07', 'SUP_08'],
+        strengthBlocks: ['SUP_04', 'SUP_06_B', 'SUP_01', 'SUP_07', 'SUP_08'],
         absCircuit: 'ABS_CIRCUIT_B',
         cardioExerciseId: 'bici-estatica-hiit',
         cardioNotes: '10 min Cardio HIIT.',
@@ -315,6 +343,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 3, // Jueves
         warmup: 'WARMUP_LOWER',
         slots: ['INF_04_A', 'INF_02', 'INF_04_B', 'INF_06', 'INF_07_B', 'INF_07_A'],
+        strengthBlocks: ['INF_04_A', 'INF_02', 'INF_04_B', 'INF_06', ['INF_07_B', 'INF_07_A']],
         absCircuit: 'ABS_CIRCUIT_C',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada.',
@@ -325,6 +354,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 4, // Viernes
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_05', 'SUP_06_C', 'SUP_10', 'SUP_11', 'SUP_12'],
+        strengthBlocks: ['SUP_05', 'SUP_06_C', 'SUP_10', 'SUP_11', 'SUP_12'],
         absCircuit: 'ABS_CIRCUIT_D',
         cardioExerciseId: 'bici-estatica-hiit',
         cardioNotes: '10 min Bici HIIT.',
@@ -346,6 +376,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 0, // Lunes
         warmup: 'WARMUP_LOWER',
         slots: ['INF_02', 'INF_01', 'INF_03_B', 'INF_05', 'INF_07_A'],
+        strengthBlocks: ['INF_02', 'INF_01', 'INF_03_B', 'INF_05', 'INF_07_A'],
         absCircuit: 'ABS_CIRCUIT_A',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada.',
@@ -356,6 +387,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 2, // Miércoles
         warmup: 'WARMUP_UPPER',
         slots: ['SUP_04', 'SUP_06_B', 'SUP_01', 'SUP_08', 'SUP_11', 'SUP_12'],
+        strengthBlocks: ['SUP_04', 'SUP_06_B', 'SUP_01', 'SUP_08', ['SUP_11', 'SUP_12']],
         absCircuit: 'ABS_CIRCUIT_B',
         cardioExerciseId: 'bici-estatica-hiit',
         cardioNotes: '10 min Bici HIIT.',
@@ -366,6 +398,7 @@ export const ROUTINE_CLUSTERS: Record<RoutineClusterId, RoutineClusterDef> = {
         weekday: 4, // Viernes
         warmup: 'WARMUP_LOWER',
         slots: ['INF_04_A', 'INF_02', 'INF_04_B', 'INF_06', 'INF_07_B', 'INF_07_A'],
+        strengthBlocks: ['INF_04_A', 'INF_02', 'INF_04_B', 'INF_06', ['INF_07_B', 'INF_07_A']],
         absCircuit: 'ABS_CIRCUIT_C',
         cardioExerciseId: 'caminadora-inclinada',
         cardioNotes: '10 min Caminadora inclinada.',

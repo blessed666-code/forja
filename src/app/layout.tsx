@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from 'next'
 import { Big_Shoulders, Figtree, IBM_Plex_Mono } from 'next/font/google'
+import { headers } from 'next/headers'
 import Script from 'next/script'
 import type { ReactNode } from 'react'
 import { applyMotionLevel } from '@/components/motion/motionLevel'
 import { MotionProvider } from '@/components/motion/MotionProvider'
-import { SmoothScroll } from '@/components/motion/SmoothScroll'
 import { PwaRegister } from '@/components/pwa/PwaRegister'
 import { buildRootMetadata } from '@/lib/seo/metadata'
 import { getGlobalJsonLdGraph, serializeJsonLd } from '@/lib/seo/schema'
@@ -47,16 +47,18 @@ interface RootLayoutProps {
   children: ReactNode
 }
 
-export default function RootLayout({ children }: RootLayoutProps) {
+export default async function RootLayout({ children }: RootLayoutProps) {
+  const hdrs = await headers()
+  const nonce = hdrs.get('x-nonce') ?? undefined
   const globalJsonLd = serializeJsonLd(getGlobalJsonLdGraph())
 
   return (
     <html lang="es-CO" suppressHydrationWarning className={`${bigShoulders.variable} ${figtree.variable} ${plexMono.variable}`}>
       <body className="bg-bg font-sans text-text antialiased">
-        <Script id="arka-motion" strategy="beforeInteractive">
+        <Script id="arka-motion" strategy="beforeInteractive" nonce={nonce}>
           {MOTION_SCRIPT}
         </Script>
-        <script id="forja-schema-jsonld" type="application/ld+json">
+        <script id="forja-schema-jsonld" type="application/ld+json" nonce={nonce}>
           {globalJsonLd}
         </script>
         <a
@@ -66,7 +68,6 @@ export default function RootLayout({ children }: RootLayoutProps) {
           Saltar al contenido
         </a>
         <MotionProvider>
-          <SmoothScroll lerp={0.1} />
           {children}
           <PwaRegister />
         </MotionProvider>

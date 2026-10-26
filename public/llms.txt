@@ -1,24 +1,26 @@
 # FORJA · ARKA Fitness AI
-> Aplicación web progresiva (PWA) de entrenamiento determinista en gimnasio y nutrición funcional desarrollada en Bogotá, Colombia por ARKA (https://arkadigital.co), en alianza oficial con superalimentos NAIU (https://naiu.bio).
+> Aplicación web progresiva (PWA) privada de entrenamiento determinista en gimnasio y nutrición funcional desarrollada en Bogotá, Colombia por ARKA (https://arkadigital.co), en alianza oficial con superalimentos NAIU (https://naiu.bio).
 
 ## Qué hace FORJA
 - Motor Determinista de Rutinas (Zero-AI Hallucination): asigna por código uno de los 6 clusters científicos oficiales (`H-3`, `H-4`, `H-5`, `M-3`, `M-4`, `M-5`) cruzando enfoque anatómico, frecuencia semanal (3, 4 o 5 días), tiempo por sesión (60, 90 o 120 minutos) y alertas articulares.
+- Acceso Exclusivo por Código de Cortesía: membresía privada respaldada en Supabase PostgreSQL con Row Level Security (RLS) y sesiones en cookies `HttpOnly`.
 - Diccionario de 26 Slots Biomecánicos (`SUP_01` a `SUP_13`, `INF_01` a `INF_08`): permite sustituir cualquier ejercicio en vivo por su equivalente exacto en máquina, polea o peso libre si una estación está ocupada.
 - Blindaje Articular Preventivo: incluye calentamiento obligatorio del manguito rotador (3x20 Face Pulls en días de torso), tope de 80 grados en elevaciones laterales y reemplazos automáticos ante molestias de hombro, rodilla, codo o espalda baja.
-- Motor Nutricional Clínico: calcula tasa metabólica basal y macronutrientes con fórmulas Mifflin-St Jeor (proteína a 2.0 g/kg) priorizando alimentos reales de plaza y mercado colombiano, junto con adaptógenos peruanos puros de NAIU.
-- Modelo B2B / Marca Blanca: disponible para gimnasios en Bogotá y Colombia a través de ARKA (https://arkadigital.co).
+- Motor Nutricional Clínico: calcula tasa metabólica basal y macronutrientes con fórmulas Mifflin-St Jeor (proteína a 2.0 g/kg) priorizando alimentos reales de plaza y mercado colombiano, junto con el catálogo oficial de NAIU Vital.
+
+## Catálogo Oficial Aliado NAIU Vital (https://naiu.bio/tienda/naiu-vital)
+- Maca Peruana Negra ($75.000 COP): rendimiento físico pesado, fuerza y enfoque mental (https://naiu.bio/tienda/naiu-vital/maca-negra).
+- Maca Roja Peruana ($75.000 COP): vitalidad, balance hormonal femenino y densidad ósea (https://naiu.bio/tienda/naiu-vital/maca-roja).
+- Camu Camu ($75.000 COP): Vitamina C natural biodisponible para síntesis de colágeno tendinoso y control de cortisol (https://naiu.bio/tienda/naiu-vital/camu-camu).
+- Chontaduro en Polvo ($35.000 COP): energía vital sostenida del Pacífico y aminoácidos esenciales (https://naiu.bio/tienda/naiu-vital/chontaduro).
+- Café Indígena de Origen Seynekun ($55.000 COP): activación limpia pre-entreno de la Sierra Nevada (https://naiu.bio/tienda/naiu-vital/cafe-seynekun).
+- Cacao Indígena de Origen Seynekun ($20.000 COP): teobromina y flavonoides para bombeo muscular y batidos (https://naiu.bio/tienda/naiu-vital/cacao-seynekun).
+- Café Orgánico Sierra Nevada Cooagronevada ($55.000 COP): café orgánico de comercio justo (https://naiu.bio/tienda/naiu-vital/cafe-cooagronevada).
+- Chocolate de Mesa Gourmet Orgánico Cooagronevada ($38.000 COP): energía ancestral para desayunos de entrenamiento (https://naiu.bio/tienda/naiu-vital/chocolate-mesa-cooagronevada).
 
 ## Secciones Principales
-- [Entreno de Hoy](/hoy): Sesión activa del día con bloques de blindaje articular, series moduladas, temporizador háptico y recomendación contextual NAIU.
-- [Quiz de Asignación en 7 Pasos](/quiz): Diagnóstico determinista de género, objetivo, días (3, 4 o 5), duración (60, 90 o 120 min), experiencia, articulaciones y biometría.
-- [Biblioteca Biomecánica](/biblioteca): Catálogo de ejercicios seguros con demostración visual, técnica de ejecución y equivalencias por vector de fuerza.
+- [Acceso Exclusivo](/acceso): Ingreso seguro y canje de códigos de cortesía.
+- [Quiz de Asignación](/quiz): Diagnóstico determinista de enfoque, objetivo, días (3, 4 o 5), duración (60, 90 o 120 min), nivel, articulaciones y biometría.
+- [Biblioteca Biomecánica](/biblioteca): Catálogo de ejercicios seguros con demostración visual y equivalencias por vector de fuerza.
 - [ARKA — Agencia Desarrolladora](https://arkadigital.co): Implementación de sistemas digitales y versión marca blanca de FORJA para gimnasios.
-- [NAIU — Superalimentos Aliados](https://naiu.bio): Tienda oficial externa de Maca Negra, Maca Roja y Maca Amarilla recomendadas según el perfil del atleta.
-
-## Preguntas Frecuentes
-- ¿La inteligencia artificial inventa las rutinas de FORJA?: No. La prescripción de series, repeticiones, descansos y ejercicios es 100% determinista en código TypeScript sobre 6 clusters validados; el coach asistente solo resuelve dudas de técnica, sustituciones por slot y nutrición diaria.
-- ¿Cuántos días por semana permite entrenar FORJA?: Exactamente 3, 4 o 5 días por semana para garantizar frecuencia 2 por grupo muscular sin caer en estímulo insuficiente (1-2 días) ni sobreentrenamiento articular (6-7 días).
-- ¿Qué pasa si una máquina del gimnasio está ocupada o tengo molestia en el hombro?: Cada ejercicio pertenece a uno de los 26 slots biomecánicos con 3 variantes equivalentes (estándar, máquina/polea y libre/calistenia), y las alertas articulares reemplazan automáticamente ejercicios lesivos como fondos en paralelas por press sentado guiado.
-- ¿Cómo calcula FORJA las calorías y qué alimentos recomienda?: Usa la ecuación clínica Mifflin-St Jeor ajustada por días de entreno y objetivo, estructurada con alimentos cotidianos de Colombia (huevos, pechuga, res magra, pescado, papa, arroz, plátano, aguacate y leguminosas) y superalimentos NAIU.
-- ¿FORJA procesa fotos del cuerpo o vende suplementos directamente?: No. Por política estricta de privacidad bloquea cualquier fotografía corporal o selfie (solo admite fotos opcionales de platos de comida, tablas nutricionales o máquinas de gimnasio) y no tiene carrito propio; los superalimentos enlazan directamente a https://naiu.bio.
-- ¿Un gimnasio puede contratar FORJA con su propia marca?: Sí. ARKA (https://arkadigital.co) implementa FORJA para gimnasios comerciales en Bogotá y Colombia con identidad propia y conexión a su propia clave de API para el coach interno.
+- [NAIU — Superalimentos Aliados](https://naiu.bio): Tienda oficial con envíos a toda Colombia y pedidos por WhatsApp (+57 302 791 0559).

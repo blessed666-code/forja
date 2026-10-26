@@ -2,9 +2,9 @@ import { ROUTINE_CLUSTERS, TIME_MODULATIONS, resolveClusterId, resolveTimeMode }
 import { EXERCISES, getExercise } from './exercises'
 import { ABS_CIRCUITS, WARMUP_LOWER, WARMUP_UPPER } from './fixedBlocks'
 import { BIOMECHANICAL_SLOTS, getSlotExerciseId } from './slots'
-import type { Days, Equipment, Exercise, Place, Profile } from './types'
+import type { Days, Equipment, Exercise, JointAlert, Place, Profile, SessionPhase, SlotId } from './types'
 
-/** Plantillas de día y splits clásicos */
+/** Plantillas de día y splits clásicos (respaldo casa / TRX) */
 type TemplateId =
   | 'torso-a'
   | 'pierna-a'
@@ -24,35 +24,35 @@ const TEMPLATES: Record<TemplateId, { name: string; ids: string[] }> = {
   },
   'pierna-a': {
     name: 'Pierna A',
-    ids: ['sentadilla-barra', 'peso-muerto-rumano', 'zancada-barra', 'extension-rodilla', 'estiramiento-isquios'],
+    ids: ['sentadilla-barra', 'peso-muerto-rumano', 'zancada-barra', 'extension-rodilla', 'curl-femoral', 'estiramiento-isquios'],
   },
   'torso-b': {
     name: 'Torso B',
-    ids: ['press-inclinado-mancuernas', 'remo-mancuerna', 'press-militar-barra', 'remo-polea-sentado', 'curl-barra', 'triceps-polea'],
+    ids: ['press-inclinado-mancuernas', 'remo-mancuerna', 'press-militar-barra', 'remo-polea-sentado', 'curl-barra', 'plancha-frontal'],
   },
   'pierna-b': {
     name: 'Pierna B',
-    ids: ['peso-muerto-barra', 'prensa', 'sentadilla-bulgara', 'curl-femoral', 'estiramiento-isquios'],
+    ids: ['peso-muerto-barra', 'prensa', 'sentadilla-bulgara', 'curl-femoral', 'extension-rodilla', 'estiramiento-isquios'],
   },
   'full-a': {
     name: 'Full body A',
-    ids: ['sentadilla-barra', 'press-banca-barra', 'remo-barra-supino', 'press-hombro-mancuernas', 'plancha-frontal', 'estiramiento-isquios'],
+    ids: ['sentadilla-barra', 'press-banca-barra', 'remo-barra-supino', 'press-hombro-mancuernas', 'curl-barra', 'plancha-frontal'],
   },
   'full-b': {
     name: 'Full body B',
-    ids: ['peso-muerto-barra', 'press-inclinado-mancuernas', 'jalon-polea', 'zancada-barra', 'curl-barra', 'estiramiento-isquios'],
+    ids: ['peso-muerto-barra', 'press-inclinado-mancuernas', 'jalon-polea', 'zancada-barra', 'triceps-polea', 'estiramiento-isquios'],
   },
   'full-c': {
     name: 'Full body C',
-    ids: ['prensa', 'fondos', 'remo-polea-sentado', 'elevaciones-laterales', 'peso-muerto-rumano', 'deadbug', 'estiramiento-isquios'],
+    ids: ['prensa', 'fondos', 'remo-polea-sentado', 'elevaciones-laterales', 'peso-muerto-rumano', 'deadbug'],
   },
   empuje: {
     name: 'Empuje',
-    ids: ['press-banca-barra', 'press-militar-barra', 'press-inclinado-mancuernas', 'elevaciones-laterales', 'fondos', 'triceps-polea'],
+    ids: ['press-banca-barra', 'press-militar-barra', 'press-inclinado-mancuernas', 'elevaciones-laterales', 'fondos', 'plancha-frontal'],
   },
   jalon: {
     name: 'Jalón',
-    ids: ['remo-barra-supino', 'jalon-polea', 'remo-mancuerna', 'remo-polea-sentado', 'curl-barra', 'curl-mancuernas'],
+    ids: ['remo-barra-supino', 'jalon-polea', 'remo-mancuerna', 'remo-polea-sentado', 'curl-barra', 'plancha-frontal'],
   },
   pierna: {
     name: 'Pierna',
@@ -86,10 +86,31 @@ export const ALLOWED_EQUIPMENT: Record<Place, Equipment[]> = {
   trx: ['trx', 'peso-corporal'],
 }
 
+export interface SessionBlock {
+  phase: SessionPhase
+  title: string
+  subtitle: string
+  durationMinutes: number
+  laps?: number
+  workIntervalSec?: number
+  transitionSec?: number
+  restBetweenLapsSec?: number
+  notes?: string
+  exercises: Exercise[]
+}
+
 export interface PlanSession {
   id: string
+  dayNumber: number
   name: string
   weekday: number
+  /** Los 5 bloques/ejercicios principales de fuerza del día */
+  mainCount: number
+  /** Resumen legible de los 5 bloques principales del día */
+  strengthPreview: string[]
+  /** Estructura completa por etapas: Calentamiento -> Fuerza (5) -> Abdomen -> Cardio */
+  blocks: SessionBlock[]
+  /** Lista plana total preservada para compatibilidad interna */
   exercises: Exercise[]
   warmupName?: string
   absName?: string
@@ -111,8 +132,29 @@ function resolve(ex: Exercise, allowed: Equipment[], used: Set<string>): Exercis
   return fresh.find((c) => c.pose === ex.pose) ?? fresh[0] ?? preferTrx[0] ?? pool[0] ?? ex
 }
 
+function buildStrengthExercise(
+  slotId: SlotId,
+  blockNumber: number,
+  profile: Profile,
+  alerts: JointAlert[] | undefined,
+  sets: number,
+  rest: number,
+  badge?: string,
+): Exercise {
+  const exId = profile.favorite_overrides?.[slotId] ?? getSlotExerciseId(slotId, alerts)
+  const base = getExercise(exId) ?? EXERCISES[0]
+  return {
+    ...base,
+    slot_id: slotId,
+    sets,
+    rest,
+    phase: 'strength',
+    block_number: blockNumber,
+    block_badge: badge,
+  }
+}
+
 export function buildPlan(profile: Profile): Plan {
-  // 1. Si el usuario cuenta con perfil determinista de género y días entre 3 y 5
   const isDeterministicEligible =
     Boolean(profile.cluster_id) || (Boolean(profile.gender) && profile.days >= 3 && profile.days <= 5)
 
@@ -124,70 +166,171 @@ export function buildPlan(profile: Profile): Plan {
       const minutes = profile.session_duration_min ?? profile.minutes
       const timeMode = profile.time_mode ?? resolveTimeMode(minutes)
       const mod = TIME_MODULATIONS[timeMode]
+      const isBeginner = profile.level === 'principiante' || profile.level === 'nuevo'
 
-      const maxStrengthExercises =
-        profile.level === 'principiante' || profile.level === 'nuevo'
-          ? 4
-          : profile.level === 'intermedio'
-            ? 5
-            : 6
+      const baseAlerts: JointAlert[] = [
+        ...(profile.joint_alerts ?? []),
+        ...(profile.care !== 'ninguna' ? [profile.care] : []),
+      ]
+      // Si el diagnóstico corporal detecta sobrepeso alto (obesidad), activar cuidado preventivo de rodilla en impacto
+      if (profile.diagnosis?.category === 'obesidad' && !baseAlerts.includes('rodilla')) {
+        baseAlerts.push('rodilla')
+      }
+      const alerts = baseAlerts.length > 0 ? baseAlerts : undefined
 
-      const alerts = profile.joint_alerts ?? (profile.care !== 'ninguna' ? [profile.care] : undefined)
+      const shouldIncludeCardio =
+        mod.hasCardio ||
+        profile.goal === 'bajar_peso' ||
+        profile.goal === 'grasa' ||
+        profile.diagnosis?.category === 'sobrepeso' ||
+        profile.diagnosis?.category === 'obesidad'
 
-      const sessions: PlanSession[] = clusterDef.sessions.map((sessionDef) => {
-        // Bloque 1: Calentamiento & Blindaje
+      const sessions: PlanSession[] = clusterDef.sessions.map((sessionDef, sessionIdx) => {
+        // FASE 1: Calentamiento & Blindaje Articular
         const warmupBlock = sessionDef.warmup === 'WARMUP_UPPER' ? WARMUP_UPPER : WARMUP_LOWER
-        const warmupExercises = warmupBlock.exercises.map((e) => ({
+        const warmupExercises: Exercise[] = warmupBlock.exercises.map((e, idx) => ({
           ...e,
           sets: mod.mode === '60_MIN' ? 1 : e.sets,
+          phase: 'warmup',
+          block_number: idx + 1,
         }))
 
-        // Bloque 2: Bloque de Fuerza modulado
-        const selectedSlots = sessionDef.slots.slice(0, maxStrengthExercises)
-        const strengthExercises = selectedSlots.map((slotId, index) => {
-          let exId = profile.favorite_overrides?.[slotId]
-          if (!exId) {
-            exId = getSlotExerciseId(slotId, alerts)
-          }
-          const base = getExercise(exId) ?? EXERCISES[0]
+        // FASE 2: Los 5 Bloques Principales de Fuerza (1 a 5 exactos en cada día)
+        const strengthExercises: Exercise[] = []
+        const strengthPreview: string[] = []
+
+        sessionDef.strengthBlocks.forEach((entry, blockIdx) => {
+          const blockNumber = blockIdx + 1
 
           let sets = mod.seriesCount
           let rest = mod.restSeconds
-          if (mod.mode === '90_MIN') {
-            sets = index < 2 ? 4 : 3
-            rest = index < 2 ? 120 : 90
+          if (isBeginner) {
+            sets = 3
+            rest = 90
+          } else if (mod.mode === '60_MIN') {
+            sets = 3
+            rest = 75
+          } else if (mod.mode === '90_MIN') {
+            sets = blockIdx < 2 ? 4 : 3
+            rest = blockIdx < 2 ? 120 : 90
           } else if (mod.mode === '120_MIN') {
-            sets = index < 3 ? 4 : 3
-            rest = index < 3 ? 150 : 120
+            sets = blockIdx < 3 ? 4 : 3
+            rest = blockIdx < 3 ? 150 : 120
           }
 
-          return { ...base, sets, rest }
+          if (typeof entry === 'string') {
+            const badge =
+              mod.mode === '60_MIN' && blockIdx >= 3 ? `Bloque ${blockNumber} · Biserie Express` : `Ejercicio ${blockNumber} de 5`
+            const built = buildStrengthExercise(entry, blockNumber, profile, alerts, sets, rest, badge)
+            strengthExercises.push(built)
+            strengthPreview.push(`${blockNumber}. ${built.name}`)
+          } else {
+            const [slotA, slotB] = entry
+            const exA = buildStrengthExercise(
+              slotA,
+              blockNumber,
+              profile,
+              alerts,
+              3,
+              20,
+              `Bloque ${blockNumber}A · Biserie`,
+            )
+            const exB = buildStrengthExercise(
+              slotB,
+              blockNumber,
+              profile,
+              alerts,
+              3,
+              90,
+              `Bloque ${blockNumber}B · Biserie`,
+            )
+            strengthExercises.push(exA, exB)
+            strengthPreview.push(`${blockNumber}. Biserie: ${exA.name} + ${exB.name}`)
+          }
         })
 
-        // Bloque 3: Circuito de Abdomen
+        // FASE 3: Circuito Oficial de Abdomen (2 o 3 vueltas)
         const absCircuit = ABS_CIRCUITS[sessionDef.absCircuit]
-        const absExercises = absCircuit.exercises.map((e) => ({
+        const absExercises: Exercise[] = absCircuit.exercises.map((e, idx) => ({
           ...e,
           sets: mod.absLaps,
+          phase: 'abs',
+          block_number: idx + 1,
         }))
 
-        // Bloque 4: Cardio
+        // FASE 4: Cardio Metabólico
         let cardioExercises: Exercise[] = []
-        if (mod.hasCardio && sessionDef.cardioExerciseId) {
-          const cardio = getExercise(sessionDef.cardioExerciseId)
-          if (cardio) cardioExercises = [cardio]
+        let effectiveCardioNotes = sessionDef.cardioNotes
+        if (shouldIncludeCardio && sessionDef.cardioExerciseId) {
+          const lowImpactNeeded = Boolean(alerts?.includes('rodilla') || profile.diagnosis?.category === 'obesidad')
+          const cardioId = lowImpactNeeded ? 'caminadora-inclinada' : sessionDef.cardioExerciseId
+          if (lowImpactNeeded) {
+            effectiveCardioNotes = '10 min Caminadora inclinada 10-14% sin trote (bajo impacto articular).'
+          }
+          const cardio = getExercise(cardioId)
+          if (cardio) {
+            cardioExercises = [{ ...cardio, phase: 'cardio', block_number: 1 }]
+          }
+        }
+
+        const blocks: SessionBlock[] = [
+          {
+            phase: 'warmup',
+            title: 'Calentamiento',
+            subtitle: warmupBlock.name,
+            durationMinutes: mod.warmupMinutes,
+            notes: warmupBlock.focus,
+            exercises: warmupExercises,
+          },
+          {
+            phase: 'strength',
+            title: '5 Ejercicios',
+            subtitle: 'Bloque Principal de Fuerza',
+            durationMinutes: mod.strengthMinutes,
+            notes: isBeginner
+              ? 'Progresión controlada a 3 series cuidando técnica (RIR 2).'
+              : 'Respeta descansos y esfuerzo RIR indicado en cada movimiento.',
+            exercises: strengthExercises,
+          },
+          {
+            phase: 'abs',
+            title: 'Abdomen',
+            subtitle: absCircuit.name,
+            durationMinutes: mod.absMinutes,
+            laps: mod.absLaps,
+            workIntervalSec: absCircuit.workIntervalSec,
+            transitionSec: absCircuit.transitionSec,
+            restBetweenLapsSec: absCircuit.restBetweenLapsSec,
+            notes: `${mod.absLaps} vueltas · ${absCircuit.workIntervalSec}s trabajo / ${absCircuit.transitionSec}s transición · ${absCircuit.restBetweenLapsSec}s al cerrar vuelta.`,
+            exercises: absExercises,
+          },
+        ]
+
+        if (cardioExercises.length > 0) {
+          blocks.push({
+            phase: 'cardio',
+            title: 'Cardio',
+            subtitle: 'Cierre Metabólico',
+            durationMinutes: mod.cardioMinutes > 0 ? mod.cardioMinutes : 10,
+            notes: effectiveCardioNotes,
+            exercises: cardioExercises,
+          })
         }
 
         const exercises = [...warmupExercises, ...strengthExercises, ...absExercises, ...cardioExercises]
 
         return {
           id: sessionDef.id,
+          dayNumber: sessionIdx + 1,
           name: sessionDef.name,
           weekday: sessionDef.weekday,
+          mainCount: 5,
+          strengthPreview,
+          blocks,
           exercises,
           warmupName: warmupBlock.name,
           absName: absCircuit.name,
-          cardioNotes: sessionDef.cardioNotes,
+          cardioNotes: cardioExercises.length > 0 ? effectiveCardioNotes : undefined,
         }
       })
 
@@ -200,33 +343,84 @@ export function buildPlan(profile: Profile): Plan {
     }
   }
 
-  // 2. Fallback a la rutina clásica para usuarios en casa, TRX o perfiles 2/6 días
+  // Fallback para casa / TRX
   const split = SPLITS[profile.days] ?? SPLITS[4]
   const allowed = ALLOWED_EQUIPMENT[profile.place] ?? ALLOWED_EQUIPMENT.gym
-  const maxMain = profile.minutes === 30 ? 4 : profile.minutes === 45 ? 5 : 6
   const suffix = profile.place === 'casa' ? ' · en casa' : profile.place === 'trx' ? ' · TRX' : ''
 
-  const sessions = split.templates.map((templateId, index) => {
+  const sessions: PlanSession[] = split.templates.map((templateId, index) => {
     const template = TEMPLATES[templateId]
     const used = new Set<string>()
     const base = template.ids.map((id) => getExercise(id)).filter((e): e is Exercise => Boolean(e))
-    const main = base.filter((e) => !e.closer).slice(0, maxMain)
+    const main = base.filter((e) => !e.closer).slice(0, 5)
     const closers = base.filter((e) => e.closer)
-    const resolved = [...main, ...closers].map((e) => {
+
+    const resolvedMain = main.map((e, idx) => {
       const r = resolve(e, allowed, used)
       used.add(r.id)
-      return profile.level === 'nuevo' && !r.closer ? { ...r, sets: Math.max(2, r.sets - 1) } : r
+      const adjusted = profile.level === 'nuevo' ? { ...r, sets: Math.max(2, r.sets - 1) } : r
+      return {
+        ...adjusted,
+        phase: 'strength' as const,
+        block_number: idx + 1,
+        block_badge: `Ejercicio ${idx + 1} de ${main.length}`,
+      }
     })
+
+    const resolvedClosers = closers.map((e, idx) => ({
+      ...e,
+      phase: 'abs' as const,
+      block_number: idx + 1,
+    }))
+
     const movilidad = getExercise('movilidad-8')
-    const exercises = profile.place === 'casa' && movilidad ? [movilidad, ...resolved] : resolved
-    return { id: `dia-${index + 1}`, name: template.name, weekday: split.weekdays[index], exercises }
+    const warmupList: Exercise[] = movilidad ? [{ ...movilidad, phase: 'warmup', block_number: 1 }] : []
+
+    const blocks: SessionBlock[] = []
+    if (warmupList.length > 0) {
+      blocks.push({
+        phase: 'warmup',
+        title: 'Calentamiento',
+        subtitle: 'Movilidad Articular Inicial',
+        durationMinutes: 8,
+        exercises: warmupList,
+      })
+    }
+    blocks.push({
+      phase: 'strength',
+      title: `${resolvedMain.length} Ejercicios`,
+      subtitle: 'Bloque Principal',
+      durationMinutes: 40,
+      exercises: resolvedMain,
+    })
+    if (resolvedClosers.length > 0) {
+      blocks.push({
+        phase: 'abs',
+        title: 'Core / Cierre',
+        subtitle: 'Estabilidad y Vuelta a la Calma',
+        durationMinutes: 10,
+        laps: 2,
+        exercises: resolvedClosers,
+      })
+    }
+
+    const exercises = [...warmupList, ...resolvedMain, ...resolvedClosers]
+    return {
+      id: `dia-${index + 1}`,
+      dayNumber: index + 1,
+      name: template.name,
+      weekday: split.weekdays[index],
+      mainCount: resolvedMain.length,
+      strengthPreview: resolvedMain.map((item, i) => `${i + 1}. ${item.name}`),
+      blocks,
+      exercises,
+    }
   })
 
   return { splitName: split.name + suffix, sessions }
 }
 
 export function substitutesFor(ex: Exercise, place: Place): Exercise[] {
-  // Si el ejercicio pertenece a un slot biomecánico, priorizar las alternativas del mismo slot
   if (ex.slot_id) {
     const slot = BIOMECHANICAL_SLOTS[ex.slot_id]
     if (slot) {
@@ -258,6 +452,7 @@ export function substitutesFor(ex: Exercise, place: Place): Exercise[] {
 }
 
 const REST_WORDS: Record<number, string> = {
+  15: 'quince segundos',
   20: 'veinte segundos',
   30: 'treinta segundos',
   45: 'cuarenta y cinco segundos',
